@@ -132,39 +132,50 @@ body.ingame .disc{margin:6px 4px 0;padding-bottom:2px}
 .bottom .draw{background:#ffcf40;color:#10192e;flex:1.4}
 .bottom .stop{background:#3ddc84;color:#0b2a1a}
 .bottom.go .draw{animation:pulse 1.2s infinite}
+/* Valg af mål direkte i gitteret */
+@keyframes tgtpulse{0%,100%{box-shadow:inset 0 0 0 3px #ffcf40,0 0 0 0 #ffcf4000}50%{box-shadow:inset 0 0 0 3px #ffcf40,0 0 0 4px #ffcf4055}}
+.grid.picking .pr.tgt{cursor:pointer;animation:tgtpulse 1.1s infinite}
+.grid.picking .pr.tgt .tgtchip{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:3;background:#ffcf40;color:#10192e;font-size:11px;font-weight:900;padding:2px 9px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 6px #0007;pointer-events:none}
+.grid.picking .pr.off{opacity:.32;filter:grayscale(.7)}
+.grid.picking .pr.soft{opacity:.45;animation:none}
+.grid.picking .pr.sel{animation:none;box-shadow:inset 0 0 0 4px #fff,0 0 0 3px #ffcf40,0 0 18px #ffcf40aa;z-index:3}
+.selstamp{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:6px;background:#10192e88;border-radius:12px;pointer-events:none}
+.selstamp .c{width:44px;height:60px;font-size:24px;transform:rotate(-8deg);box-shadow:0 4px 12px #000a}
+.selstamp .c i{display:none}
+.selstamp b{font-size:30px;color:#fff;background:#1aaa46;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #0008}
+.drawbadge{position:absolute;right:6px;bottom:6px;z-index:3;transform:rotate(9deg);pointer-events:none;animation:badgein .45s cubic-bezier(.2,.9,.3,1.3) both}
+.drawbadge .c{width:42px;height:58px;font-size:22px;box-shadow:0 0 0 2px #fff,0 0 16px #ffcf40cc,0 4px 10px #000a}
+.drawbadge .c i{display:none}
+@keyframes badgein{from{transform:translateY(-30px) rotate(-20deg) scale(.6);opacity:0}}
+.pr.src{box-shadow:inset 0 0 0 2px #ffffff55}
+.c.givsel{outline:3px solid #ffcf40;transform:translateY(-4px);box-shadow:0 6px 10px #0008}
+/* Giv væk trin 1: vælg talkortet i din egen brik */
+@keyframes gvtap{0%,100%{box-shadow:0 0 0 2px #ffcf40}50%{box-shadow:0 0 0 4px #ffcf40aa}}
+.grid.picking .pr.gvsrc{box-shadow:inset 0 0 0 2px #ffffff55}
+.pr.gvsrc .c.gvtap{cursor:pointer;animation:gvtap 1.1s infinite;position:relative;z-index:2}
+.pr.gvsrc .c.gvtap:active{transform:scale(.94)}
+.pr.gvsrc .c.gvoff{opacity:.3;filter:grayscale(.8);pointer-events:none}
+.grid.fit .pr.gvsrc .sm{align-items:flex-end}
+.grid.fit .pr.gvsrc .sm .c.gvoff{width:calc(var(--cw,30px)*.55);height:calc(var(--cw,30px)*.74);font-size:calc(var(--cw,30px)*.26)}
+body.ingame .bottom.pickbar,body.ingame .bottom.waitbar{align-items:center;gap:10px;min-height:72px}
+body.ingame .bottom.pickbar{background:#1b2a4a;border-top:2px solid #ffcf40}
+body.ingame .bottom.waitbar{background:#10192ef5;border-top:2px solid #2b3d63}
+.pickbar .pbcard .c,.waitbar .pbcard .c{width:38px;height:52px;font-size:21px;border-radius:7px;box-shadow:none}
+.waitbar .pbcard .c{width:30px;height:42px;font-size:17px;opacity:.85}
+.pickbar .pbcard .c i,.waitbar .pbcard .c i{display:none}
+.pickbar .pbtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pickbar .pbtxt small{font-size:12px;color:#9fb0d0;font-weight:700}
+.pickbar .pbtxt b{font-size:17px;line-height:1.2;color:#fff}
+.waitbar .wtxt{flex:1;min-width:0;font-size:15px;font-weight:700;color:#c5d2ea;line-height:1.3}
+.waitbar .wtxt b{color:#fff}
+body.ingame .bottom.pickbar button{flex:none;height:46px;font-size:15px;padding:0 14px;background:#2b3d63;color:#fff;border-radius:12px}
+body.ingame .bottom.pickbar button.undo{background:#fff;color:#10192e}
+.pbprog{position:absolute;left:0;top:-2px;height:3px;background:#fff;animation:pbprog var(--undo,1.6s) linear forwards}
+@keyframes pbprog{from{width:100%}to{width:0}}
 .modal{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:20}
 .modal.show{display:flex}
 .sheet{background:#1b2a4a;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 14px calc(18px + env(safe-area-inset-bottom))}
 .sheet h2{margin:0 0 6px;font-size:24px}
-.pick button{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:8px;background:#22345a;color:#fff;font-size:19px;padding:16px}
-.pick button b{color:#ffcf40}
-.pick button .who{display:flex;align-items:center;gap:6px;min-width:0;text-align:left}
-.pick button .who .ain{font-size:13px}
-.pick button .who .ds{font-size:15px;font-weight:600;color:#9fb0d0}
-.pick button .sc2{display:flex;flex-direction:column;align-items:flex-end;line-height:1;flex:none;margin-left:10px}
-.pick button .sc2 b{font-size:24px;font-weight:900}
-.pick button .sc2 small{font-size:13px;font-weight:700;color:#c5d2ea;margin-top:4px;white-space:nowrap}
-.pick button .sc2 small em{font-style:normal;color:#fff}
-.pick button .lft{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;flex:1}
-.pick button .lft .who{max-width:100%}
-.pick button .hand{display:flex;flex-wrap:wrap;gap:3px}
-.pick button .hand .c{width:22px;height:30px;font-size:13px;border-radius:5px;box-shadow:none}
-.pick button .hand .c.mod{font-size:9px}
-.pick button .hand .c.fr,.pick button .hand .c.f3,.pick button .hand .c.sc,.pick button .hand .c.et,.pick button .hand .c.gv,.pick button .hand .c.pa,.pick button .hand .c.h2,.pick button .hand .c.gh{font-size:11px}
-.pick button .hand .c i{display:none}
-.pick button .hand.many .c{width:18px;height:25px;font-size:11px;border-radius:4px}
-.pick button .hand.many .c.mod{font-size:8px}
-.pick button .hand .none{font-size:12px;font-weight:600;color:#9fb0d0}
-.pick.gvr button{padding:10px 14px}
-.pick.gvr.tight button{padding:7px 12px;margin-bottom:6px;font-size:17px}
-.pick.gvr.tight button .lft{gap:4px}
-.pick.gvr.tight button .sc2 b{font-size:20px}
-.c.mini{width:34px;height:46px;font-size:20px;border-radius:7px;vertical-align:middle;box-shadow:none;margin:0 2px}
-.c.mini i{display:none}
-.gvc{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
-.gvc button{background:#22345a;border-radius:14px;padding:12px 0 10px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#9fb0d0;font-size:12px;font-weight:700}
-.gvc button .c{width:62px;height:86px;font-size:40px;border-radius:10px}
-.gvc button:active{background:#2b3d63}
 table{width:100%;border-collapse:collapse;font-size:16px;margin:8px 0 12px}
 th,td{padding:8px 4px;text-align:left;border-bottom:1px solid #2b3d63}
 th{color:#9fb0d0;font-weight:500;font-size:13px}
@@ -389,6 +400,29 @@ const MINUS_LIST = [['off','Fra'],['a','−2 −4 −6'],['b','−4 −6 −8'],
 let role = null, room = null, peer = null, S = null, view = null, conns = {}, hostConn = null;
 let connState = 'offline', errMsg = '', myName = LS.get('name', ''), rejected = false, lastMsg = 0, reconnTimer = null, freshHost = false;
 let lastSeq = null, wasMyTurn = false, sending = false, lastEv = null, gvNum = null;
+// Valg i gitteret: tryk markerer målet; handlingen sendes først når fortryd-tiden er udløbet.
+const UNDO_MS = 1600;
+let gridSel = null, gridSelT = null, gridKey = null;
+const PICK_TXT = { fr: 'Tryk på den spiller der skal fryses', f3: 'Tryk på den spiller der skal trække 3', sc: 'Tryk på den der skal have 2. chance', gh: 'Tryk på den spiller der skal have ÷2' };
+const PICK_DONE = { fr: n => 'Fryser ' + n, f3: n => n + ' trækker 3', sc: n => n + ' får 2. chance', gh: n => n + ' får ÷2', gv: (n, k) => 'Giver ' + k + ' til ' + n };
+const WAIT_TXT = { fr: 'vælger hvem der skal fryses', f3: 'vælger hvem der skal trække 3', sc: 'vælger hvem der skal have 2. chance', gh: 'vælger hvem der skal have ÷2', gv: 'vælger hvem der skal have et kort' };
+function pendKey(v) { const P = v && v.pending; return P ? P.card + ':' + P.chooser + ':' + v.evSeq : null; }
+function gridPick(i) {
+  if (gridSel !== null || sending) return;
+  const v = view, P = v && v.pending, meIdx = v ? v.players.findIndex(p => p.id === myId) : -1;
+  if (!P || P.chooser !== meIdx || P.options.indexOf(i) < 0) return;
+  gridSel = i; gridKey = pendKey(v); render();
+  clearTimeout(gridSelT);
+  gridSelT = setTimeout(() => {
+    const t = gridSel, k = gridKey, num = gvNum; gridSel = null; gridKey = null;
+    const P2 = view && view.pending, me2 = view ? view.players.findIndex(p => p.id === myId) : -1;
+    // kun hvis det samme valg stadig venter på os
+    if (t === null || !P2 || pendKey(view) !== k || P2.chooser !== me2 || P2.options.indexOf(t) < 0) { render(); return; }
+    hostAct({ a: 'choose', target: t, num: num });
+  }, UNDO_MS);
+}
+function gridUndo() { clearTimeout(gridSelT); gridSel = null; gridKey = null; render(); }
+function gvPickNum(n) { if (gridSel !== null) return; gvNum = n; render(); }
 
 // ---------- indstillinger (kun denne enhed, gemmes i f7o-settings, sendes aldrig over nettet) ----------
 const RM = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
@@ -986,6 +1020,17 @@ function fitGrid() {
     if (r * (cw * 1.34 + cg) - cg <= availH) break;
   }
   g.style.setProperty('--cw', cw + 'px'); g.style.setProperty('--cg', cg + 'px');
+  // Giv væk trin 1: egne kort må gerne blive større i egen brik, så de er nemme at ramme
+  const own = g.querySelector('.pr.gvsrc');
+  if (own) {
+    const ws = [...own.querySelectorAll('.sm .c')].map(c => c.classList.contains('gvoff') ? 0.55 : 1);
+    const head2 = own.querySelector('.sm').getBoundingClientRect().top - own.getBoundingClientRect().top;
+    const aH = own.clientHeight - head2 - fs * 0.6 - 2, aW = own.clientWidth - fs * 1.1 - 2;
+    const fits = w => { let x = 0, r = 1; ws.forEach(f => { const cwid = f * w; if (x > 0 && x + cwid > aW) { r++; x = 0; } x += cwid + cg; }); return r * (w * 1.34 + cg) - cg <= aH; };
+    let ow = 90;
+    while (ow > cw && !fits(ow)) ow--;
+    if (ow > cw) own.style.setProperty('--cw', ow + 'px');
+  }
 }
 window.addEventListener('resize', () => fitGrid());
 function render() {
@@ -1065,16 +1110,6 @@ function renderLobby() {
   keepInput(() => { $('app').innerHTML = h; });
 }
 
-function pickRow(v, i, meIdx, withHand) {
-  const p = v.players[i];
-  const nm = p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name;
-  if (withHand) {
-    const n = p.nums.length + p.mods.length + p.acts.length + (p.bustCard != null ? 1 : 0);
-    const hand = n ? handHtml(p, false) : '<span class="none">Ingen kort</span>';
-    return `<span class="lft"><span class="who"><span>${esc(nm)}</span>${p.ai ? '<span class="ain">(AI)</span>' : ''}${i === meIdx ? '<span class="ds">(dig selv)</span>' : ''}</span><span class="hand${n > 9 ? ' many' : ''}">${hand}</span></span><span class="sc2"><b>${G.roundScore(p)} p</b><small>I alt <em>${p.total}</em></small></span>`;
-  }
-  return `<span class="who"><span>${esc(nm)}</span>${p.ai ? '<span class="ain">(AI)</span>' : ''}${i === meIdx ? '<span class="ds">(dig selv)</span>' : ''}</span><span class="sc2"><b>${G.roundScore(p)} p</b><small>I alt <em>${p.total}</em></small></span>`;
-}
 function renderGame() {
   const v = view, meIdx = v.players.findIndex(p => p.id === myId), mp = v.players[meIdx];
   const myTurn = isMyTurn(v);
@@ -1101,33 +1136,55 @@ function renderGame() {
   const cardsMax = Math.max.apply(null, v.players.map(p => (p.nums||[]).length + (p.mods||[]).length + (p.acts||[]).length + (p.bustCard != null ? 1 : 0)));
   const dense = v.players.length >= 7 || cardsMax >= 7;
   const mid = !dense && (v.players.length >= 5 || cardsMax >= 4);
-  h += `<div class="grid${dense ? ' crowded' : mid ? ' mid' : ''}" id="grid">` + v.players.map((p, i) => {
+  // Valg af mål sker direkte i gitteret
+  const PK = v.phase === 'play' && v.pending && v.pending.chooser === meIdx ? v.pending : null;
+  if (!PK || (gridKey !== null && gridKey !== pendKey(v))) { clearTimeout(gridSelT); gridSel = null; gridKey = null; }
+  const gvStep1 = !!PK && PK.card === 'gv' && (gvNum == null || PK.numbers.indexOf(gvNum) < 0);
+  const pickCard = PK ? (PK.card === 'gv' && !gvStep1 ? 'n' + gvNum : PK.card) : null;
+  h += `<div class="grid${dense ? ' crowded' : mid ? ' mid' : ''}${PK ? ' picking' : ''}" id="grid">` + v.players.map((p, i) => {
     const st = p.seven ? 'seven' : p.status;
-    return `<div class="pr${i === actor ? ' turn' : ''}${st === 'bust' ? ' is-bust' : ''}${p.status === 'stopped' && !p.seven && i !== actor ? ' is-stopped' : ''}" data-p="${i}">${st === 'bust' ? '<span class="bustx">✕</span>' : ''}<span class="nm"><b>${esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name)}</b>${p.ai ? '<span class="ain"> (AI)</span>' : ''}${p.id === myId ? '<span class="dig">Dig</span>' : ''}</span><span class="pts">${G.roundScore(p)}<small>${p.total} i alt</small></span><span class="meta">${statusChip(p)}${p.skip ? '<span class="giver">over 1×</span>' : ''}${i === v.dealer ? '<span class="giver">giver</span>' : ''}${p.online ? '' : '<span class="offsmall">offline</span>'}</span><div class="sm">${handHtml(p, false)}</div></div>`;
+    let pc = '', extra = '', click = '', hand = handHtml(p, false);
+    if (PK && gvStep1) {
+      if (i === meIdx) {
+        pc = ' gvsrc';
+        hand = p.nums.map(n => cardHtml('n' + n, 'gvtap').replace('<span ', `<span role="button" data-n="${n}" onclick="gvPickNum(${n})" `)).join('') + p.mods.concat(p.acts).map(c => cardHtml(c, 'gvoff')).join('');
+      } else pc = ' off';
+    } else if (PK) {
+      const ok = PK.options.indexOf(i) >= 0;
+      if (gridSel !== null) pc = i === gridSel ? ' sel' : ok ? ' soft' : ' off';
+      else pc = ok ? ' tgt' : i === meIdx ? ' src' : ' off';
+      if (ok && gridSel === null && !sending) { click = ` onclick="gridPick(${i})" role="button"`; extra += `<span class="tgtchip">${i === meIdx ? 'Vælg dig selv' : 'Vælg'}</span>`; }
+      if (i === gridSel) extra += `<span class="selstamp">${cardHtml(pickCard)}<b>✓</b></span>`;
+      if (i === meIdx && gridSel === null) extra += `<span class="drawbadge">${cardHtml(pickCard)}</span>`;
+      if (i === meIdx && PK.card === 'gv') hand = hand.replace(`class="c n${gvNum} "`, `class="c n${gvNum} givsel"`);
+    }
+    return `<div class="pr${i === actor ? ' turn' : ''}${st === 'bust' ? ' is-bust' : ''}${p.status === 'stopped' && !p.seven && i !== actor ? ' is-stopped' : ''}${pc}" data-p="${i}"${click}>${extra}${st === 'bust' ? '<span class="bustx">✕</span>' : ''}<span class="nm"><b>${esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name)}</b>${p.ai ? '<span class="ain"> (AI)</span>' : ''}${p.id === myId ? '<span class="dig">Dig</span>' : ''}</span><span class="pts">${G.roundScore(p)}<small>${p.total} i alt</small></span><span class="meta">${statusChip(p)}${p.skip ? '<span class="giver">over 1×</span>' : ''}${i === v.dealer ? '<span class="giver">giver</span>' : ''}${p.online ? '' : '<span class="offsmall">offline</span>'}</span><div class="sm">${hand}</div></div>`;
   }).join('') + '</div>';
   $('app').innerHTML = h;
   // knapper
   const canAct = v.phase === 'play' && !v.pending && v.stage === 'turns' && v.turn === meIdx && !sending;
   const b = $('bottom'); b.style.display = v.phase === 'play' ? 'flex' : 'none';
   b.className = 'bottom' + (canAct ? ' go' : '');
+  const nmOf = i => { const p = v.players[i]; return i === meIdx ? 'dig' : esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name); };
+  if (PK) {
+    b.className = 'bottom pickbar';
+    let txt, btn = '';
+    if (gridSel !== null) { txt = `<small>${CARD_NAME[PK.card]}</small><b>${PICK_DONE[PK.card](nmOf(gridSel), gvNum)}…</b>`; btn = `<button type="button" class="undo" id="btnUndo" onclick="gridUndo()">Fortryd</button><span class="pbprog" style="--undo:${UNDO_MS}ms"></span>`; }
+    else if (sending) txt = `<small>${CARD_NAME[PK.card]}</small><b>Sender…</b>`;
+    else if (gvStep1) txt = `<small>Du trak Giv væk</small><b>Vælg det kort du vil give væk</b>`;
+    else if (PK.card === 'gv') { txt = `<small>Giv væk · dublet = bust</small><b>Tryk på den der skal have ${gvNum}</b>`; btn = '<button type="button" id="btnBack" onclick="gvNum=null;render()">← Andet kort</button>'; }
+    else txt = `<small>Du trak ${CARD_NAME[PK.card]}</small><b>${PICK_TXT[PK.card]}</b>`;
+    b.innerHTML = `<div class="pbcard">${cardHtml(pickCard)}</div><div class="pbtxt" id="pickText">${txt}</div>${btn}`;
+  } else if (v.phase === 'play' && v.pending && v.players[v.pending.chooser]) {
+    b.className = 'bottom waitbar';
+    const ch = v.players[v.pending.chooser];
+    b.innerHTML = `<div class="pbcard">${cardHtml(v.pending.card)}</div><div class="wtxt" id="waitLine"><b>${esc(ch.ai ? String(ch.name).replace(/ \(AI\)$/, '') : ch.name)}</b> ${WAIT_TXT[v.pending.card] || 'vælger'}…</div>`;
+  } else
   b.innerHTML = `<button class="stop" id="btnStop" ${canAct && G.canStop(mp) ? '' : 'disabled'} onclick="hostAct({a:'stop'})">Stop</button><button class="draw" id="btnDraw" ${canAct ? '' : 'disabled'} onclick="hostAct({a:'draw'})">Træk kort</button>`;
   fitGrid();
   // modal: målvalg / rundeslut / spilslut
   const m = $('modal'), sh = $('sheet');
-  if (v.phase === 'play' && v.pending && v.pending.card === 'gv' && v.pending.chooser === meIdx) {
-    const P = v.pending;
-    if (gvNum == null || P.numbers.indexOf(gvNum) < 0) {
-      sh.innerHTML = `<h2>Giv væk</h2><p class="hint">Vælg et af dine talkort. Har modtageren tallet i forvejen, går de bust.</p><div class="gvc" id="pick">${P.numbers.map(n => `<button type="button" data-n="${n}" onclick="gvNum=${n};render()">${cardHtml('n' + n)}</button>`).join('')}</div>`;
-    } else {
-      sh.innerHTML = `<h2>Giv ${cardHtml('n' + gvNum, 'mini')} til…</h2><p class="hint"><button class="ghost" type="button" onclick="gvNum=null;render()">← Vælg et andet tal</button></p><div class="pick gvr${P.options.length > 4 ? ' tight' : ''}" id="pick">${P.options.map(i => `<button data-t="${i}" ${sending ? 'disabled' : ''} onclick="hostAct({a:'choose',target:${i},num:${gvNum}})">${pickRow(v, i, meIdx, true)}</button>`).join('')}</div>`;
-    }
-    m.classList.add('show');
-  } else if (v.phase === 'play' && v.pending && v.pending.chooser === meIdx) {
-    const P = v.pending;
-    sh.innerHTML = `<h2>Du trak ${cardHtml(P.card, 'mini')} ${CARD_NAME[P.card]}</h2><p class="hint">${CARD_DESC[P.card]} Vælg en spiller:</p><div class="pick" id="pick">` +
-      P.options.map(i => `<button data-t="${i}" ${sending ? 'disabled' : ''} onclick="hostAct({a:'choose',target:${i}})">${pickRow(v, i, meIdx)}</button>`).join('') + '</div>';
-    m.classList.add('show');
-  } else if (v.phase === 'over') {
+  if (v.phase === 'over') {
     const ranked = G.gameRanking(v.players);
     const winner = v.players[v.winners[0]];
     let s = `<div class="win" id="winline">🏆 ${esc(winner.name)} vinder med ${winner.total} point!</div>`;
