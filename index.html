@@ -612,10 +612,10 @@ function publish() {
 // træk-kort og hvert bekræftet valg, samt én gang lige før rundeslut. Værten venter her, til animationen er vist hos alle,
 // og fortsætter så spillet (G.resume). Alle får derfor de samme mellemtilstande på samme tid, også efter genforbindelse.
 const PACE_MS = { bust: 2200, save: 2200, seven: 2400, freeze: 2000, take3: 1900, sc: 1800, give: 1800, half: 1800, pause: 1800, extra: 1700, special: 1600, mod: 1300, num: 1000 };
-const PACE_END_MS = 800, PACE_WIN_MS = 5000; // rundeslut: 0,8 s · vinder: 5 s (værten venter, så alle får det samtidig)
+const PACE_END_MS = 800; // kort pust før rundeslut og vinder (værten venter, så alle får det samtidig)
 function holdMs(st) {
   const h = st && st.hold; if (!h) return 0;
-  if (h.k === 'end') return h.win ? PACE_WIN_MS : PACE_END_MS;
+  if (h.k === 'end') return PACE_END_MS;
   let ms = 0, n = 0;
   (st.events || []).filter(e => e.id > h.from).forEach(e => {
     let d = 0;
@@ -886,8 +886,7 @@ function gateModal() {
   const v = view;
   if (!v || (v.phase !== 'roundEnd' && v.phase !== 'over')) { clearTimeout(modalT); modalT = null; return; }
   if (fxCur || fxQ.length) fxBusy(300);
-  // ved sejr har værten allerede holdt 5 s pause for alle; her ventes kun på vinder-animationen på denne skærm
-  const wait = fxUntil ? fxUntil + (v.phase === 'over' ? 0 : MODAL_BEAT) - Date.now() : 0;
+  const wait = fxUntil ? fxUntil + MODAL_BEAT - Date.now() : 0;
   if (wait <= 0) return;
   $('modal').classList.remove('show');
   clearTimeout(modalT);

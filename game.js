@@ -285,13 +285,8 @@
     }
     return false;
   }
-  // Ender rundeslut med en vinder? (samme regel som endRound: højeste total ≥ mål og ingen uafgjort)
-  function willWin(S) {
-    var tot = S.players.map(function (p) { return p.total + roundScore(p); }), max = Math.max.apply(null, tot);
-    return max >= S.target && tot.filter(function (t) { return t === max; }).length === 1;
-  }
   function finishRound(S) {
-    if (S.pace && !S.endOk) { S.hold = { k: 'end', from: S.evSeq || 0 }; if (willWin(S)) S.hold.win = 1; return; }
+    if (S.pace && !S.endOk) { S.hold = { k: 'end', from: S.evSeq || 0 }; return; }
     S.endOk = false; return endRound(S);
   }
   function resume(S, rng) {
