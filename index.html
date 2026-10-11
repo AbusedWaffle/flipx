@@ -137,12 +137,35 @@ body.ingame .disc{margin:6px 4px 0;padding-bottom:2px}
 .grid.picking .pr.tgt{cursor:pointer;animation:tgtpulse 1.1s infinite}
 .grid.picking .pr.tgt .tgtchip{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:3;background:#ffcf40;color:#10192e;font-size:11px;font-weight:900;padding:2px 9px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 6px #0007;pointer-events:none}
 .grid.picking .pr.off{opacity:.32;filter:grayscale(.7)}
-.grid.picking .pr.soft{opacity:.45;animation:none}
-.grid.picking .pr.sel{animation:none;box-shadow:inset 0 0 0 4px #fff,0 0 0 3px #ffcf40,0 0 18px #ffcf40aa;z-index:3}
-.selstamp{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:6px;background:#10192e88;border-radius:12px;pointer-events:none}
-.selstamp .c{width:44px;height:60px;font-size:24px;transform:rotate(-8deg);box-shadow:0 4px 12px #000a}
-.selstamp .c i{display:none}
-.selstamp b{font-size:30px;color:#fff;background:#1aaa46;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #0008}
+.grid.picking .pr.tgt.sel{animation:selpulse 1s infinite;box-shadow:inset 0 0 0 5px #fff,0 0 0 4px #ffcf40,0 0 26px 6px #ffcf40cc;transform:scale(1.03);z-index:4}
+@keyframes selpulse{50%{box-shadow:inset 0 0 0 5px #fff,0 0 0 5px #ffcf40,0 0 36px 12px #ffcf40ee}}
+.grid.picking.hassel .pr.tgt:not(.sel){animation:none;box-shadow:inset 0 0 0 2px #ffcf40aa;opacity:.72}
+.grid.picking.hassel .pr.tgt:not(.sel) .tgtchip{background:#ffcf40cc}
+.grid.picking .pr.tgt .tgtchip.okchip{background:#fff;color:#10192e;font-size:12px;padding:4px 12px;bottom:7px;box-shadow:0 0 0 3px #ffcf40,0 3px 10px #000a;animation:confchip 1s infinite}
+@keyframes confchip{50%{box-shadow:0 0 0 5px #ffcf40,0 3px 10px #000a}}
+.selcard{position:absolute;right:8px;bottom:34px;z-index:4;transform:rotate(10deg);pointer-events:none;animation:badgein .35s cubic-bezier(.2,.9,.3,1.3) both}
+.selcard .c{width:40px;height:54px;font-size:21px;box-shadow:0 0 0 2px #fff,0 0 14px #ffcf40cc,0 4px 10px #000a}
+.selcard .c i{display:none}
+.grid.many .selcard{bottom:28px;right:5px}
+.grid.many .selcard .c,.grid.many .drawbadge .c{width:30px;height:41px;font-size:16px}
+.grid.many .pr.tgt .tgtchip.okchip{font-size:11px;padding:3px 9px}
+/* andre spillere ser hvilken brik vælgeren har markeret (kan ikke trykkes) */
+.grid.watching .pr.marked{box-shadow:inset 0 0 0 4px #ffcf40,0 0 22px 5px #ffcf4088;z-index:3;animation:markpulse 1.2s infinite}
+@keyframes markpulse{50%{box-shadow:inset 0 0 0 4px #ffcf40,0 0 30px 9px #ffcf40aa}}
+.grid.watching .pr.marked .mkchip{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:3;background:#ffcf40;color:#10192e;font-size:11px;font-weight:900;padding:2px 9px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 6px #0007;pointer-events:none}
+.waitbar .wmark{font-size:13px;color:#ffcf40;font-weight:800;margin-top:2px}
+.waitbar .wmark b{color:#fff}
+/* bekræft-animationer på brikkerne */
+.icecap{position:absolute;inset:0;z-index:5;border-radius:12px;pointer-events:none;background:linear-gradient(160deg,#e9f9ffd0,#9fdcffa0 45%,#e9f9ff60);box-shadow:inset 0 0 0 3px #fff,inset 0 0 26px #fff;display:flex;align-items:center;justify-content:center;font-size:54px;color:#fff;text-shadow:0 0 14px #7fd8ff,0 2px 0 #3a8bbf;animation:icecap 1.8s ease-out both}
+@keyframes icecap{0%{opacity:0;transform:scale(1.15)}18%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0}}
+.tilestamp{position:absolute;left:50%;top:50%;z-index:5;pointer-events:none;font-size:46px;font-weight:900;color:#fff;background:#b02a8f;border-radius:14px;padding:2px 14px;box-shadow:0 0 0 3px #fff,0 6px 18px #000a;animation:tstamp 1.6s cubic-bezier(.2,1.3,.4,1) both}
+.tilestamp.sc{background:#e0485f}
+@keyframes tstamp{0%{transform:translate(-50%,-50%) scale(2.6) rotate(-14deg);opacity:0}22%{transform:translate(-50%,-50%) scale(1) rotate(-6deg);opacity:1}75%{opacity:1}100%{transform:translate(-50%,-50%) scale(1) rotate(-6deg);opacity:0}}
+.c.leaving{animation:leaving .9s ease-in both!important}
+@keyframes leaving{0%{transform:none;opacity:1}100%{transform:translateY(-14px) scale(.6);opacity:0}}
+.c.arriving{opacity:0}
+body.anim-none .icecap,body.anim-none .tilestamp{display:none!important}
+body.anim-reduced .icecap,body.anim-reduced .tilestamp{animation:fadeq 1.4s both!important}
 .drawbadge{position:absolute;right:6px;bottom:6px;z-index:3;transform:rotate(9deg);pointer-events:none;animation:badgein .45s cubic-bezier(.2,.9,.3,1.3) both}
 .drawbadge .c{width:42px;height:58px;font-size:22px;box-shadow:0 0 0 2px #fff,0 0 16px #ffcf40cc,0 4px 10px #000a}
 .drawbadge .c i{display:none}
@@ -169,9 +192,6 @@ body.ingame .bottom.waitbar{background:#10192ef5;border-top:2px solid #2b3d63}
 .waitbar .wtxt{flex:1;min-width:0;font-size:15px;font-weight:700;color:#c5d2ea;line-height:1.3}
 .waitbar .wtxt b{color:#fff}
 body.ingame .bottom.pickbar button{flex:none;height:46px;font-size:15px;padding:0 14px;background:#2b3d63;color:#fff;border-radius:12px}
-body.ingame .bottom.pickbar button.undo{background:#fff;color:#10192e}
-.pbprog{position:absolute;left:0;top:-2px;height:3px;background:#fff;animation:pbprog var(--undo,1.6s) linear forwards}
-@keyframes pbprog{from{width:100%}to{width:0}}
 .modal{position:fixed;inset:0;background:#000b;display:none;align-items:flex-end;justify-content:center;z-index:20}
 .modal.show{display:flex}
 .sheet{background:#1b2a4a;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 14px calc(18px + env(safe-area-inset-bottom))}
@@ -400,29 +420,30 @@ const MINUS_LIST = [['off','Fra'],['a','−2 −4 −6'],['b','−4 −6 −8'],
 let role = null, room = null, peer = null, S = null, view = null, conns = {}, hostConn = null;
 let connState = 'offline', errMsg = '', myName = LS.get('name', ''), rejected = false, lastMsg = 0, reconnTimer = null, freshHost = false;
 let lastSeq = null, wasMyTurn = false, sending = false, lastEv = null, gvNum = null;
-// Valg i gitteret: tryk markerer målet; handlingen sendes først når fortryd-tiden er udløbet.
-const UNDO_MS = 1600;
-let gridSel = null, gridSelT = null, gridKey = null;
+// Valg i gitteret: første tryk markerer målet (vises live hos alle), tryk igen på samme brik bekræfter.
+let gridSel = null, gridKey = null;
 const PICK_TXT = { fr: 'Tryk på den spiller der skal fryses', f3: 'Tryk på den spiller der skal trække 3', sc: 'Tryk på den der skal have 2. chance', gh: 'Tryk på den spiller der skal have ÷2' };
-const PICK_DONE = { fr: n => 'Fryser ' + n, f3: n => n + ' trækker 3', sc: n => n + ' får 2. chance', gh: n => n + ' får ÷2', gv: (n, k) => 'Giver ' + k + ' til ' + n };
+const PICK_VERB = { fr: s => s ? 'for at fryse dig selv' : 'for at fryse', f3: s => s ? 'for at trække 3 selv' : 'for at give Træk 3', sc: s => s ? 'for at tage 2. chance' : 'for at give 2. chance', gh: s => s ? 'for at tage ÷2 selv' : 'for at give ÷2', gv: (s, k) => 'for at give ' + k };
 const WAIT_TXT = { fr: 'vælger hvem der skal fryses', f3: 'vælger hvem der skal trække 3', sc: 'vælger hvem der skal have 2. chance', gh: 'vælger hvem der skal have ÷2', gv: 'vælger hvem der skal have et kort' };
 function pendKey(v) { const P = v && v.pending; return P ? P.card + ':' + P.chooser + ':' + v.evSeq : null; }
+// Markeringen sendes til værten, som lægger den i pending.mark og sender den ud til alle
+function sendMark(t) {
+  if (role === 'host') { if (S && S.pending) { if (t === null) delete S.pending.mark; else S.pending.mark = { t, n: gvNum }; publish(); } }
+  else if (hostConn && hostConn.open) send(hostConn, { t: 'mark', target: t, num: gvNum });
+}
 function gridPick(i) {
-  if (gridSel !== null || sending) return;
+  if (sending) return;
   const v = view, P = v && v.pending, meIdx = v ? v.players.findIndex(p => p.id === myId) : -1;
   if (!P || P.chooser !== meIdx || P.options.indexOf(i) < 0) return;
-  gridSel = i; gridKey = pendKey(v); render();
-  clearTimeout(gridSelT);
-  gridSelT = setTimeout(() => {
-    const t = gridSel, k = gridKey, num = gvNum; gridSel = null; gridKey = null;
-    const P2 = view && view.pending, me2 = view ? view.players.findIndex(p => p.id === myId) : -1;
-    // kun hvis det samme valg stadig venter på os
-    if (t === null || !P2 || pendKey(view) !== k || P2.chooser !== me2 || P2.options.indexOf(t) < 0) { render(); return; }
-    hostAct({ a: 'choose', target: t, num: num });
-  }, UNDO_MS);
+  if (P.card === 'gv' && (gvNum == null || P.numbers.indexOf(gvNum) < 0)) return;
+  if (gridSel === i && gridKey === pendKey(v)) { // andet tryk: bekræft
+    gridSel = null; gridKey = null; hostAct({ a: 'choose', target: i, num: gvNum }); return;
+  }
+  gridSel = i; gridKey = pendKey(v); buzz(15);
+  if (role === 'host') sendMark(i); else { sendMark(i); render(); }
 }
-function gridUndo() { clearTimeout(gridSelT); gridSel = null; gridKey = null; render(); }
-function gvPickNum(n) { if (gridSel !== null) return; gvNum = n; render(); }
+function gvPickNum(n) { if (sending) return; gvNum = n; if (gridSel !== null) { gridSel = null; gridKey = null; sendMark(null); } render(); }
+function gvBack() { gvNum = null; const had = gridSel !== null; gridSel = null; gridKey = null; if (had) sendMark(null); render(); }
 
 // ---------- indstillinger (kun denne enhed, gemmes i f7o-settings, sendes aldrig over nettet) ----------
 const RM = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
@@ -559,6 +580,12 @@ function onHostData(c, d) {
   } else if (d.t === 'uid' && c.pid && conns[c.pid] === c) {
     const p = S.players.find(x => x.id === c.pid);
     if (setFuid(p, d.uid)) publish();
+  } else if (d.t === 'mark' && c.pid && conns[c.pid] === c) {
+    const i = S.players.findIndex(p => p.id === c.pid), P = S.pending;
+    if (!P || P.chooser !== i) return;
+    if (d.target === null || d.target === undefined) { if (!P.mark) return; delete P.mark; }
+    else { if (P.options.indexOf(d.target) < 0) return; P.mark = { t: d.target, n: typeof d.num === 'number' ? d.num : null }; }
+    publish();
   } else if (d.t === 'intent' && c.pid && conns[c.pid] === c) {
     const r = G.act(S, c.pid, { a: d.a, target: d.target, num: d.num });
     if (!r.ok) send(c, { t: 'err', msg: r.err });
@@ -602,6 +629,7 @@ function hostAi(n) {
   publish();
 }
 let aiTimer = null, aiPlan = null;
+const AI_MARK_MS = 900;
 function stopAi() { clearTimeout(aiTimer); aiTimer = null; aiPlan = null; }
 function scheduleAi() {
   if (role !== 'host' || !S || !view || view.phase === 'lobby') { stopAi(); return; }
@@ -612,10 +640,20 @@ function scheduleAi() {
   clearTimeout(aiTimer);
   aiPlan = key;
   aiTimer = setTimeout(() => {
-    aiPlan = null;
-    if (role !== 'host' || !S) return;
+    if (role !== 'host' || !S) { aiPlan = null; return; }
     const now = G.aiDecide(S);
-    if (!now || now.pid !== d.pid) return;
+    if (!now || now.pid !== d.pid) { aiPlan = null; return; }
+    if (now.a === 'choose' && S.pending && now.target !== undefined && now.target !== null) {
+      // vis AI'ens valg som markering et øjeblik, så mennesker kan nå at se det
+      const P = S.pending; P.mark = { t: now.target, n: now.num != null ? now.num : null, ai: true }; publish();
+      aiTimer = setTimeout(() => {
+        aiPlan = null;
+        if (role !== 'host' || !S || S.pending !== P) return;
+        hostActFor(now.pid, { a: 'choose', target: now.target, num: now.num });
+      }, AI_MARK_MS);
+      return;
+    }
+    aiPlan = null;
     hostActFor(now.pid, { a: now.a, target: now.target, num: now.num });
   }, 600 + Math.floor(Math.random() * 601));
 }
@@ -869,25 +907,41 @@ function fxGhost(row, card) {
   const el = sm.lastElementChild;
   setTimeout(() => { if (el && el.parentNode) el.remove(); }, 900);
 }
-function flyCard(from, to, card, line) {
+function flyCard(from, to, card, line, opt) {
+  opt = opt || {};
   const a = fxRow(from), b = fxRow(to);
-  if (SET.anim !== 'full' || !a || !b || from === to) { if (line) toast(line, 'action', 2000); return; }
-  const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+  if (SET.anim !== 'full' || !a || !b || from === to) { if (line) toast(line, 'action', 2000); if (opt.land) opt.land(); return; }
+  const ra = opt.fromEl ? opt.fromEl.getBoundingClientRect() : a.getBoundingClientRect(), rb = b.getBoundingClientRect();
   const fly = document.createElement('div');
   fly.className = 'flyer';
   fly.innerHTML = cardHtml(card);
   const x = ra.left + ra.width / 2, y = ra.top + ra.height / 2;
   const dx = (rb.left + rb.width / 2) - x, dy = (rb.top + rb.height / 2) - y;
+  const rot = opt.rot || 0;
   fly.style.transition = 'none';
-  fly.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%) rotate(-10deg)';
+  fly.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%) rotate(' + (rot - 10) + 'deg)' + (opt.fromEl ? ' scale(.6)' : '');
+  if (opt.delay) fly.style.opacity = '0';
   document.body.appendChild(fly);
   void fly.offsetWidth;
   if (line) toast(line, 'action', 2200);
   setTimeout(() => {
-    fly.style.transition = 'transform 1.15s linear';
-    fly.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(.72) rotate(8deg)';
-  }, 40);
-  setTimeout(() => { if (fly.parentNode) fly.remove(); fxAddCls(b, 'fx-land'); }, 1250);
+    fly.style.opacity = '';
+    fly.style.transition = 'transform 1.1s cubic-bezier(.3,.1,.3,1)';
+    fly.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(.72) rotate(' + (rot + 8) + 'deg)';
+  }, 40 + (opt.delay || 0));
+  setTimeout(() => { if (fly.parentNode) fly.remove(); fxAddCls(fxRow(to), 'fx-land'); if (opt.land) opt.land(); }, 1200 + (opt.delay || 0));
+}
+// Effekter oven på en brik (efter bekræftet valg)
+function tileFx(i, kind, delay) {
+  if (SET.anim === 'none') return;
+  setTimeout(() => {
+    const row = fxRow(i); if (!row) return;
+    const el = document.createElement('div');
+    if (kind === 'ice') { el.className = 'icecap'; el.textContent = '❄'; }
+    else { el.className = 'tilestamp ' + kind; el.textContent = kind === 'sc' ? '♥' : kind === 'f3' ? '3' : '÷2'; }
+    el.dataset.t0 = Date.now(); row.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 1900);
+  }, delay || 0);
 }
 function tileBust(row, mode) {
   if (!row) return;
@@ -905,9 +959,27 @@ function spectate(e, v) {
   const passed = (e.type === 'freeze' || e.type === 'take3' || e.type === 'give' || e.type === 'sc' || e.type === 'half') && e.t !== undefined && e.p !== e.t && !e.none;
   if (SET.anim !== 'full' || !passed) { if (line && SET.anim === 'reduced') toast(line, 'action', 2000); return; }
   if (!passed) return;
-  const card = e.type === 'freeze' ? 'fr' : e.type === 'take3' ? 'f3' : e.type === 'sc' ? 'sc' : e.type === 'half' ? 'gh' : (e.card || 'gv');
+  if (e.type === 'take3') { // Træk 3: tre kort flyver af sted mod målet
+    [0, 1, 2].forEach(k => flyCard(e.p, e.t, 'f3', k ? '' : line, { delay: k * 160, rot: (k - 1) * 9 }));
+    return;
+  }
+  if (e.type === 'give' && e.card) { // Giv væk: kortet forlader giverens brik og lander hos modtageren
+    const src = fxRow(e.p), sm = src && src.querySelector('.sm');
+    let ghost = null;
+    if (sm) { // spøgelseskortet sættes ind på kortets gamle plads i rækken og forsvinder
+      const v0 = +numOf(e.card), nums = [...sm.querySelectorAll('.c')].filter(c => /^n\d+$/.test(c.dataset.c || '') && !c.classList.contains('dup'));
+      const after = nums.find(c => +c.dataset.c.slice(1) > v0) || (nums.length ? nums[nums.length - 1].nextSibling : sm.firstChild);
+      const tmp = document.createElement('div'); tmp.innerHTML = cardHtml(e.card, 'leaving'); ghost = tmp.firstElementChild; sm.insertBefore(ghost, after || null); setTimeout(() => { if (ghost && ghost.parentNode) ghost.remove(); }, 950); }
+    const dst = fxRow(e.t), got = dst && [...dst.querySelectorAll(`.c[data-c="${e.card}"]`)].pop();
+    if (got) got.classList.add('arriving');
+    flyCard(e.p, e.t, e.card, line, { fromEl: ghost, land: () => { const r = fxRow(e.t), c = r && [...r.querySelectorAll(`.c[data-c="${e.card}"]`)].pop(); if (c) { c.classList.remove('arriving'); c.classList.add('dealin'); } } });
+    return;
+  }
+  const card = e.type === 'freeze' ? 'fr' : e.type === 'sc' ? 'sc' : e.type === 'half' ? 'gh' : (e.card || 'gv');
   flyCard(e.p, e.t, card, line);
 }
+// Flyver der et kort hen til målet hos denne seer? (så brik-effekten venter på landingen)
+function flies(e, meIdx) { return SET.anim === 'full' && e.t !== undefined && e.p !== e.t && !seesOverlay(e, meIdx); }
 // Afspil hændelser: små effekter direkte på kort/rækker, store som overlay i kø
 function playEvents(fresh, v) {
   const meIdx = v.players.findIndex(p => p.id === myId);
@@ -934,10 +1006,13 @@ function playEvents(fresh, v) {
     } else if (e.type === 'stop') {
       fxAddCls(row, 'fx-stop'); fxFloat(row, 'Stopper · ' + e.pts + ' p', 'stop');
     } else if (e.type === 'freeze') {
-      fxAddCls(fxRow(e.t), 'fx-ice');
+      fxAddCls(fxRow(e.t), 'fx-ice'); tileFx(e.t, 'ice', flies(e, meIdx) ? 1150 : 0);
     } else if (e.type === 'half') {
-      fxAddCls(fxRow(e.t), 'fx-glow');
+      fxAddCls(fxRow(e.t), 'fx-glow'); if (e.card === 'gh') tileFx(e.t, 'half', flies(e, meIdx) ? 1150 : 0);
+    } else if (e.type === 'take3' && e.p !== e.t) {
+      tileFx(e.t, 'f3', flies(e, meIdx) ? 1450 : 0);
     } else if (e.type === 'sc' || e.type === 'save') {
+      if (e.type === 'sc' && e.p !== e.t) tileFx(e.t, 'sc', flies(e, meIdx) ? 1150 : 0);
       const t = e.type === 'sc' ? e.t : e.p; fxAddCls(fxRow(t), 'fx-glow');
     } else if (e.type === 'seven') {
       fxAddCls(row, 'fx-gold');
@@ -1138,10 +1213,15 @@ function renderGame() {
   const mid = !dense && (v.players.length >= 5 || cardsMax >= 4);
   // Valg af mål sker direkte i gitteret
   const PK = v.phase === 'play' && v.pending && v.pending.chooser === meIdx ? v.pending : null;
-  if (!PK || (gridKey !== null && gridKey !== pendKey(v))) { clearTimeout(gridSelT); gridSel = null; gridKey = null; }
+  if (!PK || (gridKey !== null && gridKey !== pendKey(v)) || (gridSel !== null && PK.options.indexOf(gridSel) < 0)) { gridSel = null; gridKey = null; }
   const gvStep1 = !!PK && PK.card === 'gv' && (gvNum == null || PK.numbers.indexOf(gvNum) < 0);
+  if (gvStep1) { gridSel = null; gridKey = null; }
+  // efter genindlæsning: overtag værtens markering
+  if (PK && !gvStep1 && gridSel === null && gridKey === null && PK.mark && PK.options.indexOf(PK.mark.t) >= 0 && (PK.card !== 'gv' || PK.mark.n === gvNum)) { gridSel = PK.mark.t; gridKey = pendKey(v); }
+  const WP = !PK && v.phase === 'play' && v.pending ? v.pending : null;
+  const wMark = WP && WP.mark && v.players[WP.mark.t] ? WP.mark.t : null;
   const pickCard = PK ? (PK.card === 'gv' && !gvStep1 ? 'n' + gvNum : PK.card) : null;
-  h += `<div class="grid${dense ? ' crowded' : mid ? ' mid' : ''}${PK ? ' picking' : ''}" id="grid">` + v.players.map((p, i) => {
+  h += `<div class="grid${dense ? ' crowded' : mid ? ' mid' : ''}${PK ? ' picking' + (gridSel !== null ? ' hassel' : '') : ''}${v.players.length >= 4 ? ' many' : ''}${WP ? ' watching' : ''}" id="grid">` + v.players.map((p, i) => {
     const st = p.seven ? 'seven' : p.status;
     let pc = '', extra = '', click = '', hand = handHtml(p, false);
     if (PK && gvStep1) {
@@ -1151,16 +1231,22 @@ function renderGame() {
       } else pc = ' off';
     } else if (PK) {
       const ok = PK.options.indexOf(i) >= 0;
-      if (gridSel !== null) pc = i === gridSel ? ' sel' : ok ? ' soft' : ' off';
-      else pc = ok ? ' tgt' : i === meIdx ? ' src' : ' off';
-      if (ok && gridSel === null && !sending) { click = ` onclick="gridPick(${i})" role="button"`; extra += `<span class="tgtchip">${i === meIdx ? 'Vælg dig selv' : 'Vælg'}</span>`; }
-      if (i === gridSel) extra += `<span class="selstamp">${cardHtml(pickCard)}<b>✓</b></span>`;
-      if (i === meIdx && gridSel === null) extra += `<span class="drawbadge">${cardHtml(pickCard)}</span>`;
+      const isSel = ok && i === gridSel;
+      pc = ok ? ' tgt' + (isSel ? ' sel' : '') : i === meIdx ? ' src' : ' off';
+      if (ok && !sending) click = ` onclick="gridPick(${i})" role="button"`;
+      if (ok) extra += isSel ? `<span class="tgtchip okchip">${v.players.length >= 4 ? 'Tryk igen ✓' : 'Tryk igen for at bekræfte'}</span>` : `<span class="tgtchip">${i === meIdx ? 'Vælg dig selv' : 'Vælg'}</span>`;
+      if (isSel) extra += `<span class="selcard">${cardHtml(pickCard)}</span>`;
+      if (i === meIdx && !isSel) extra += `<span class="drawbadge">${cardHtml(pickCard)}</span>`;
       if (i === meIdx && PK.card === 'gv') hand = hand.replace(`class="c n${gvNum} "`, `class="c n${gvNum} givsel"`);
+    } else if (WP && i === wMark) {
+      pc = ' marked'; extra += '<span class="mkchip">Markeret</span>';
     }
     return `<div class="pr${i === actor ? ' turn' : ''}${st === 'bust' ? ' is-bust' : ''}${p.status === 'stopped' && !p.seven && i !== actor ? ' is-stopped' : ''}${pc}" data-p="${i}"${click}>${extra}${st === 'bust' ? '<span class="bustx">✕</span>' : ''}<span class="nm"><b>${esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name)}</b>${p.ai ? '<span class="ain"> (AI)</span>' : ''}${p.id === myId ? '<span class="dig">Dig</span>' : ''}</span><span class="pts">${G.roundScore(p)}<small>${p.total} i alt</small></span><span class="meta">${statusChip(p)}${p.skip ? '<span class="giver">over 1×</span>' : ''}${i === v.dealer ? '<span class="giver">giver</span>' : ''}${p.online ? '' : '<span class="offsmall">offline</span>'}</span><div class="sm">${hand}</div></div>`;
   }).join('') + '</div>';
+  const keepFx = [...document.querySelectorAll('#grid .pr > .icecap, #grid .pr > .tilestamp')].map(el => [el.parentNode.dataset.p, el]);
   $('app').innerHTML = h;
+  // brik-effekter overlever en ny tegning (fortsætter hvor de var)
+  keepFx.forEach(([pi, el]) => { const r = fxRow(pi); if (r) { el.style.animationDelay = -(Date.now() - (+el.dataset.t0 || Date.now())) + 'ms'; r.appendChild(el); } });
   // knapper
   const canAct = v.phase === 'play' && !v.pending && v.stage === 'turns' && v.turn === meIdx && !sending;
   const b = $('bottom'); b.style.display = v.phase === 'play' ? 'flex' : 'none';
@@ -1169,16 +1255,19 @@ function renderGame() {
   if (PK) {
     b.className = 'bottom pickbar';
     let txt, btn = '';
-    if (gridSel !== null) { txt = `<small>${CARD_NAME[PK.card]}</small><b>${PICK_DONE[PK.card](nmOf(gridSel), gvNum)}…</b>`; btn = `<button type="button" class="undo" id="btnUndo" onclick="gridUndo()">Fortryd</button><span class="pbprog" style="--undo:${UNDO_MS}ms"></span>`; }
-    else if (sending) txt = `<small>${CARD_NAME[PK.card]}</small><b>Sender…</b>`;
+    if (sending) txt = `<small>${CARD_NAME[PK.card]}</small><b>Sender…</b>`;
     else if (gvStep1) txt = `<small>Du trak Giv væk</small><b>Vælg det kort du vil give væk</b>`;
-    else if (PK.card === 'gv') { txt = `<small>Giv væk · dublet = bust</small><b>Tryk på den der skal have ${gvNum}</b>`; btn = '<button type="button" id="btnBack" onclick="gvNum=null;render()">← Andet kort</button>'; }
+    else if (gridSel !== null) {
+      txt = `<small>${PK.card === 'gv' ? 'Giv væk · dublet = bust' : CARD_NAME[PK.card]}</small><b>Tryk på ${gridSel === meIdx ? 'dig selv' : nmOf(gridSel)} igen ${PICK_VERB[PK.card](gridSel === meIdx, gvNum)}</b>`;
+      if (PK.card === 'gv') btn = '<button type="button" id="btnBack" onclick="gvBack()">← Andet kort</button>';
+    }
+    else if (PK.card === 'gv') { txt = `<small>Giv væk · dublet = bust</small><b>Tryk på den der skal have ${gvNum}</b>`; btn = '<button type="button" id="btnBack" onclick="gvBack()">← Andet kort</button>'; }
     else txt = `<small>Du trak ${CARD_NAME[PK.card]}</small><b>${PICK_TXT[PK.card]}</b>`;
     b.innerHTML = `<div class="pbcard">${cardHtml(pickCard)}</div><div class="pbtxt" id="pickText">${txt}</div>${btn}`;
   } else if (v.phase === 'play' && v.pending && v.players[v.pending.chooser]) {
     b.className = 'bottom waitbar';
     const ch = v.players[v.pending.chooser];
-    b.innerHTML = `<div class="pbcard">${cardHtml(v.pending.card)}</div><div class="wtxt" id="waitLine"><b>${esc(ch.ai ? String(ch.name).replace(/ \(AI\)$/, '') : ch.name)}</b> ${WAIT_TXT[v.pending.card] || 'vælger'}…</div>`;
+    b.innerHTML = `<div class="pbcard">${cardHtml(v.pending.card)}</div><div class="wtxt"><div id="waitLine"><b>${esc(ch.ai ? String(ch.name).replace(/ \(AI\)$/, '') : ch.name)}</b> ${WAIT_TXT[v.pending.card] || 'vælger'}…</div>${wMark !== null ? `<div class="wmark" id="waitMark">Markeret: <b>${nmOf(wMark)}</b></div>` : ''}</div>`;
   } else
   b.innerHTML = `<button class="stop" id="btnStop" ${canAct && G.canStop(mp) ? '' : 'disabled'} onclick="hostAct({a:'stop'})">Stop</button><button class="draw" id="btnDraw" ${canAct ? '' : 'disabled'} onclick="hostAct({a:'draw'})">Træk kort</button>`;
   fitGrid();
