@@ -122,7 +122,7 @@
       resetPlayerRound(p);
     });
     S.round++; S.dealer = (S.dealer + 1) % n; S.phase = 'play'; S.stage = 'deal'; S.turn = -1; S.pending = null; S.sevenEnd = false; S.tie = false;
-    S.queue = [];
+    S.queue = []; delete S.hold; S.endOk = false;
     for (var k = 1; k <= n; k++) S.queue.push({ t: 'deal', i: (S.dealer + k) % n });
     log(S, 'Runde ' + S.round + ' – ' + nm(S, S.dealer) + ' giver', 'info');
     ev(S, 'round', { round: S.round, p: S.dealer });
@@ -179,7 +179,7 @@
       p.acts.push('et');
       ev(S, 'extra', { p: i, n: 2 });
       log(S, nm(S, i) + ' trækker to kort mere', 'action');
-      S.queue.unshift({ t: 'draw', i: i }, { t: 'draw', i: i });
+      S.queue.unshift({ t: 'draw', i: i, x: 1 }, { t: 'draw', i: i, x: 1 });
       return;
     }
     if (card === 'pa') {
@@ -271,29 +271,61 @@
     }
     S.turn = -1; return false;
   }
+  // Tempo (S.pace, sat af værten): efter et træk med specialkort/modifikator/bust/SYV, hvert Træk 3- og
+  // Ekstra træk-kort og hvert bekræftet valg stopper process med S.hold = {k:'step', from: evSeq før}. Værten venter,
+  // til animationen er vist, og kalder resume(). Før rundeslut stoppes der også én gang (S.hold.k = 'end').
+  // Uden S.pace opfører alt sig som før.
+  function notable(S, from, task) {
+    if (task && (task.t === 'take3' || task.x)) return true;
+    var es = (S.events || []).filter(function (e) { return e.id > from; });
+    for (var k = 0; k < es.length; k++) {
+      var e = es[k];
+      if (e.type !== 'card') return true;
+      if (!isNum(e.card)) return true;
+    }
+    return false;
+  }
+  // Ender rundeslut med en vinder? (samme regel som endRound: højeste total ≥ mål og ingen uafgjort)
+  function willWin(S) {
+    var tot = S.players.map(function (p) { return p.total + roundScore(p); }), max = Math.max.apply(null, tot);
+    return max >= S.target && tot.filter(function (t) { return t === max; }).length === 1;
+  }
+  function finishRound(S) {
+    if (S.pace && !S.endOk) { S.hold = { k: 'end', from: S.evSeq || 0 }; if (willWin(S)) S.hold.win = 1; return; }
+    S.endOk = false; return endRound(S);
+  }
+  function resume(S, rng) {
+    if (!S.hold) return { ok: false };
+    var k = S.hold.k; delete S.hold;
+    if (S.phase !== 'play') return { ok: true };
+    if (k === 'end') S.endOk = true;
+    process(S, rng); S.endOk = false;
+    return { ok: true };
+  }
   function process(S, rng) {
     var guard = 0;
-    while (S.phase === 'play' && !S.pending) {
+    while (S.phase === 'play' && !S.pending && !S.hold) {
       if (++guard > 10000) throw new Error('process loop');
-      if (S.sevenEnd) return endRound(S);
+      if (S.sevenEnd) return finishRound(S);
       if (!S.queue.length) {
         var base = S.stage === 'deal' ? S.dealer : S.turn;
         S.stage = 'turns';
-        if (!nextTurn(S, base)) return endRound(S);
+        if (!nextTurn(S, base)) return finishRound(S);
         return;
       }
-      var task = S.queue[0], card;
+      var task = S.queue[0], card, before = S.evSeq || 0;
       if (task.t === 'deal' || task.t === 'draw') {
         S.queue.shift();
         if (!isActive(S, task.i)) continue;
         card = drawCard(S, rng);
         if (card === null) { log(S, 'Ikke flere kort!', 'info'); S.queue = []; return endRound(S); }
         give(S, task.i, card, null, task.t === 'deal' ? 'fik' : 'trak');
+        if (S.pace && notable(S, before, task)) { S.hold = { k: 'step', from: before }; return; }
       } else if (task.t === 'assign') {
         S.queue.shift();
         var c = candidates(S, task.card, task.from);
         if (!c.length) { S.discard.push(task.card); log(S, label(task.card) + ' kasseres (ingen kan modtage den)', 'info'); }
-        else if (c.length === 1 && task.card !== 'gv') resolveAssign(S, task.card, task.from, c[0]);
+        else if (c.length === 1 && task.card !== 'gv') { resolveAssign(S, task.card, task.from, c[0]); if (S.pace) { S.hold = { k: 'step', from: before }; return; } }
         else { S.pending = { card: task.card, chooser: task.from, options: c }; if (task.card === 'gv') S.pending.numbers = S.players[task.from].nums.slice(); }
       } else if (task.t === 'take3') {
         if (!isActive(S, task.target)) { S.queue.shift(); S.discard.push.apply(S.discard, task.aside); continue; }
@@ -307,6 +339,7 @@
         card = drawCard(S, rng);
         if (card === null) { log(S, 'Ikke flere kort!', 'info'); S.queue = []; return endRound(S); }
         give(S, task.target, card, task, 'trak');
+        if (S.pace) { S.hold = { k: 'step', from: before }; return; }
       } else S.queue.shift();
     }
   }
@@ -331,6 +364,7 @@
   function act(S, pid, a, rng) {
     var i = -1; S.players.forEach(function (p, k) { if (p.id === pid) i = k; });
     if (i < 0) return { ok: false, err: 'Ukendt spiller' };
+    if (S.hold && (a.a === 'draw' || a.a === 'stop' || a.a === 'choose')) return { ok: false, err: 'Vent et øjeblik…' };
     if (a.a === 'draw' || a.a === 'stop') {
       if (S.phase !== 'play' || S.stage !== 'turns' || S.pending || S.turn !== i || !isActive(S, i)) return { ok: false, err: 'Ikke din tur' };
       if (a.a === 'draw') S.queue.push({ t: 'draw', i: i });
@@ -348,16 +382,22 @@
       if (P.card === 'gv') {
         var num = parseInt(a.num, 10);
         if (S.players[i].nums.indexOf(num) < 0) return { ok: false, err: 'Du har ikke det talkort' };
-        S.pending = null; resolveGive(S, i, a.target, num); process(S, rng); return { ok: true };
+        var b1 = S.evSeq || 0;
+        S.pending = null; resolveGive(S, i, a.target, num);
+        if (S.pace) S.hold = { k: 'step', from: b1 }; else process(S, rng);
+        return { ok: true };
       }
-      S.pending = null; resolveAssign(S, P.card, P.chooser, a.target); process(S, rng); return { ok: true };
+      var b2 = S.evSeq || 0;
+      S.pending = null; resolveAssign(S, P.card, P.chooser, a.target);
+      if (S.pace) S.hold = { k: 'step', from: b2 }; else process(S, rng);
+      return { ok: true };
     }
     return { ok: false, err: 'Ukendt handling' };
   }
   function nextRound(S, rng) { if (S.phase !== 'roundEnd') return { ok: false }; startRound(S, rng); return { ok: true }; }
   function backToLobby(S) {
     S.phase = 'lobby'; S.players.forEach(function (p) { p.total = 0; delete p.nums; });
-    ['deck', 'discard', 'queue', 'pending', 'history', 'winners', 'turn', 'stage', 'round', 'dealer'].forEach(function (k) { delete S[k]; });
+    ['deck', 'discard', 'queue', 'pending', 'hold', 'endOk', 'history', 'winners', 'turn', 'stage', 'round', 'dealer'].forEach(function (k) { delete S[k]; });
     log(S, 'Nyt spil – venter i lobbyen', 'info');
   }
   function countCards(S) {
@@ -432,7 +472,7 @@
   // Ét træk for den AI, der skal handle nu. Null hvis det er et menneske, eller ingen skal handle.
   function aiDecide(S) {
     var i, p;
-    if (!S || S.phase !== 'play') return null;
+    if (!S || S.phase !== 'play' || S.hold) return null;
     if (S.pending) {
       i = S.pending.chooser; p = S.players[i];
       if (!p || !p.ai) return null;
@@ -493,7 +533,7 @@
   }
 
   var api = { buildDeck: buildDeck, shuffle: shuffle, label: label, roundScore: roundScore, tableCards: tableCards, createLobby: createLobby,
-    addPlayer: addPlayer, startGame: startGame, startRound: startRound, nextRound: nextRound, act: act, process: process, endRound: endRound,
+    addPlayer: addPlayer, startGame: startGame, startRound: startRound, nextRound: nextRound, act: act, process: process, endRound: endRound, resume: resume,
     canStop: canStop, activeIdx: activeIdx, backToLobby: backToLobby, countCards: countCards, publicView: publicView, drawCard: drawCard,
     normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, sortBoard: sortBoard };
   api.eventsSince = function (S, id) { return (S.events || []).filter(function (e) { return e.id > id; }); };

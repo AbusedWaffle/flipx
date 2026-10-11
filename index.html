@@ -600,10 +600,42 @@ function onHostClose(c) {
   publish();
 }
 function publish() {
+  if (S && S.phase && S.phase !== 'lobby' && !S.pace) S.pace = true; // tempo: værten holder pause efter specialkort
   saveHost();
   const v = G.publicView(S);
   Object.values(conns).forEach(c => send(c, { t: 'state', s: v }));
   view = v; render();
+  pace();
+}
+// ---------- tempo ----------
+// game.js stopper (S.hold) efter hver hændelse, der skal ses: specialkort, modifikatorer, bust, SYV, hvert Træk 3-/Ekstra
+// træk-kort og hvert bekræftet valg, samt én gang lige før rundeslut. Værten venter her, til animationen er vist hos alle,
+// og fortsætter så spillet (G.resume). Alle får derfor de samme mellemtilstande på samme tid, også efter genforbindelse.
+const PACE_MS = { bust: 2200, save: 2200, seven: 2400, freeze: 2000, take3: 1900, sc: 1800, give: 1800, half: 1800, pause: 1800, extra: 1700, special: 1600, mod: 1300, num: 1000 };
+const PACE_END_MS = 800, PACE_WIN_MS = 5000; // rundeslut: 0,8 s · vinder: 5 s (værten venter, så alle får det samtidig)
+function holdMs(st) {
+  const h = st && st.hold; if (!h) return 0;
+  if (h.k === 'end') return h.win ? PACE_WIN_MS : PACE_END_MS;
+  let ms = 0, n = 0;
+  (st.events || []).filter(e => e.id > h.from).forEach(e => {
+    let d = 0;
+    if (e.type === 'card') d = /^n\d/.test(e.card) ? PACE_MS.num : (e.card[0] === 'm' || e.card[0] === 'd' || e.card === 'x2') ? PACE_MS.mod : PACE_MS.special;
+    else d = PACE_MS[e.type] || 0;
+    if (d) { n++; ms = Math.max(ms, d); }
+  });
+  if (n > 2) ms += 400 * (n - 2); // flere store hændelser i ét træk (fx giv + bust + ...)
+  if (!ms) ms = PACE_MS.num;
+  if (SET.anim === 'reduced') ms *= 0.7;
+  else if (SET.anim === 'none') ms = Math.min(ms, ms >= PACE_MS.special ? 1000 : 700);
+  return Math.round(ms);
+}
+let paceT = null, paceKey = null;
+function pace() {
+  if (role !== 'host' || !S || !S.hold) { if (paceT) { clearTimeout(paceT); paceT = null; paceKey = null; } return; }
+  const key = S.hold.k + ':' + S.hold.from + ':' + (S.evSeq || 0);
+  if (paceT && paceKey === key) return;
+  clearTimeout(paceT); paceKey = key;
+  paceT = setTimeout(() => { paceT = null; paceKey = null; if (role === 'host' && S && S.hold) { G.resume(S); publish(); } }, holdMs(S));
 }
 setInterval(() => {
   if (role !== 'host') return;
@@ -844,7 +876,22 @@ function fxNext() {
   buzz(mine || o.e.type === 'win' ? VIB_ME[o.e.type] : 30);
   if (SFX[o.e.type]) SFX[o.e.type]();
   if (o.e.type === 'bust' && !reducedFx()) { const a = $('app'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(() => a.classList.remove('shake'), 600); }
-  fxTimer = setTimeout(fxDone, dur);
+  fxTimer = setTimeout(fxDone, dur); fxBusy(dur + 200);
+}
+// Rundeslut/vinder vises først, når alle animationer på denne skærm er færdige + et kort pust (0,8 s)
+let fxUntil = 0, modalT = null;
+const MODAL_BEAT = 800;
+function fxBusy(ms) { fxUntil = Math.max(fxUntil, Date.now() + ms); }
+function gateModal() {
+  const v = view;
+  if (!v || (v.phase !== 'roundEnd' && v.phase !== 'over')) { clearTimeout(modalT); modalT = null; return; }
+  if (fxCur || fxQ.length) fxBusy(300);
+  // ved sejr har værten allerede holdt 5 s pause for alle; her ventes kun på vinder-animationen på denne skærm
+  const wait = fxUntil ? fxUntil + (v.phase === 'over' ? 0 : MODAL_BEAT) - Date.now() : 0;
+  if (wait <= 0) return;
+  $('modal').classList.remove('show');
+  clearTimeout(modalT);
+  modalT = setTimeout(() => { modalT = null; render(); }, wait + 20);
 }
 function fxDone() {
   const el = $('fx');
@@ -929,11 +976,13 @@ function flyCard(from, to, card, line, opt) {
     fly.style.transition = 'transform 1.1s cubic-bezier(.3,.1,.3,1)';
     fly.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(.72) rotate(' + (rot + 8) + 'deg)';
   }, 40 + (opt.delay || 0));
+  fxBusy(1250 + (opt.delay || 0));
   setTimeout(() => { if (fly.parentNode) fly.remove(); fxAddCls(fxRow(to), 'fx-land'); if (opt.land) opt.land(); }, 1200 + (opt.delay || 0));
 }
 // Effekter oven på en brik (efter bekræftet valg)
 function tileFx(i, kind, delay) {
   if (SET.anim === 'none') return;
+  fxBusy((delay || 0) + 1000);
   setTimeout(() => {
     const row = fxRow(i); if (!row) return;
     const el = document.createElement('div');
@@ -988,7 +1037,7 @@ function playEvents(fresh, v) {
     if (!big.length) return;
     const lines = big.map(([e, k]) => cueText(e, v, fresh.slice(k + 1))).slice(-3);
     const last = big[big.length - 1][0], mineEv = big.map(x => x[0]).find(e => (e.t !== undefined ? e.t : e.p) === meIdx);
-    toast(lines.join('\n'), 'cue ' + CUE_KIND[last.type], 2600 + 900 * lines.length);
+    toast(lines.join('\n'), 'cue ' + CUE_KIND[last.type], 2600 + 900 * lines.length); fxBusy(1000);
     const ev = mineEv || last; buzz(mineEv || ev.type === 'win' ? VIB_ME[ev.type] : 30); if (SFX[ev.type]) SFX[ev.type]();
     return;
   }
@@ -1123,6 +1172,7 @@ function render() {
   renderGame();
   if (view.phase === 'over') kickRecord();
   if (fresh.length) playEvents(fresh, view);
+  gateModal();
   scheduleAi();
 }
 function renderConnecting() {
@@ -1248,7 +1298,7 @@ function renderGame() {
   // brik-effekter overlever en ny tegning (fortsætter hvor de var)
   keepFx.forEach(([pi, el]) => { const r = fxRow(pi); if (r) { el.style.animationDelay = -(Date.now() - (+el.dataset.t0 || Date.now())) + 'ms'; r.appendChild(el); } });
   // knapper
-  const canAct = v.phase === 'play' && !v.pending && v.stage === 'turns' && v.turn === meIdx && !sending;
+  const canAct = v.phase === 'play' && !v.pending && !v.hold && v.stage === 'turns' && v.turn === meIdx && !sending;
   const b = $('bottom'); b.style.display = v.phase === 'play' ? 'flex' : 'none';
   b.className = 'bottom' + (canAct ? ' go' : '');
   const nmOf = i => { const p = v.players[i]; return i === meIdx ? 'dig' : esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name); };
