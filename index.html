@@ -58,8 +58,6 @@ button:disabled{opacity:.35}
 .pr.is-stopped .ain{color:#d8cfa6}
 .pr.is-bust .sm{opacity:.6;filter:grayscale(.45)}
 .bustx{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;font-size:54px;font-weight:900;color:#ff2d4d;text-shadow:0 3px 0 #2a0610,0 0 14px #ff2d4daa;pointer-events:none;line-height:1}
-.bustpop{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;background:#e0485fe6;border-radius:12px;animation:slam .4s both;pointer-events:none}
-.bustnote{position:absolute;left:6px;right:6px;bottom:6px;z-index:5;background:#e0485f;color:#fff;font-weight:800;font-size:12px;text-align:center;border-radius:8px;padding:3px 4px;pointer-events:none}
 .pr .nm{font-size:15px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.15;display:flex;align-items:center;gap:4px;min-width:0}
 .pr .nm b{overflow:hidden;text-overflow:ellipsis}
 .dig{flex:none;font-size:10px;font-weight:800;background:#10192ecc;color:#fff;border-radius:8px;padding:1px 5px;line-height:1.4}
@@ -156,16 +154,9 @@ body.ingame .disc{margin:6px 4px 0;padding-bottom:2px}
 .waitbar .wmark{font-size:13px;color:#ffcf40;font-weight:800;margin-top:2px}
 .waitbar .wmark b{color:#fff}
 /* bekræft-animationer på brikkerne */
-.icecap{position:absolute;inset:0;z-index:5;border-radius:12px;pointer-events:none;background:linear-gradient(160deg,#e9f9ffd0,#9fdcffa0 45%,#e9f9ff60);box-shadow:inset 0 0 0 3px #fff,inset 0 0 26px #fff;display:flex;align-items:center;justify-content:center;font-size:54px;color:#fff;text-shadow:0 0 14px #7fd8ff,0 2px 0 #3a8bbf;animation:icecap 1.8s ease-out both}
-@keyframes icecap{0%{opacity:0;transform:scale(1.15)}18%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0}}
-.tilestamp{position:absolute;left:50%;top:50%;z-index:5;pointer-events:none;font-size:46px;font-weight:900;color:#fff;background:#b02a8f;border-radius:14px;padding:2px 14px;box-shadow:0 0 0 3px #fff,0 6px 18px #000a;animation:tstamp 1.6s cubic-bezier(.2,1.3,.4,1) both}
-.tilestamp.sc{background:#e0485f}
-@keyframes tstamp{0%{transform:translate(-50%,-50%) scale(2.6) rotate(-14deg);opacity:0}22%{transform:translate(-50%,-50%) scale(1) rotate(-6deg);opacity:1}75%{opacity:1}100%{transform:translate(-50%,-50%) scale(1) rotate(-6deg);opacity:0}}
 .c.leaving{animation:leaving .9s ease-in both!important}
 @keyframes leaving{0%{transform:none;opacity:1}100%{transform:translateY(-14px) scale(.6);opacity:0}}
 .c.arriving{opacity:0}
-body.anim-none .icecap,body.anim-none .tilestamp{display:none!important}
-body.anim-reduced .icecap,body.anim-reduced .tilestamp{animation:fadeq 1.4s both!important}
 .drawbadge{position:absolute;right:6px;bottom:6px;z-index:3;transform:rotate(9deg);pointer-events:none;animation:badgein .45s cubic-bezier(.2,.9,.3,1.3) both}
 .drawbadge .c{width:42px;height:58px;font-size:22px;box-shadow:0 0 0 2px #fff,0 0 16px #ffcf40cc,0 4px 10px #000a}
 .drawbadge .c i{display:none}
@@ -263,44 +254,7 @@ td.n{text-align:right;font-weight:800}
 .c.big{width:78px;height:112px;font-size:50px;border-radius:12px;box-shadow:0 6px 18px #0009}
 .c.big i{font-size:12px}
 .c.big.mod{font-size:34px}.c.big.fr,.c.big.f3,.c.big.sc,.c.big.et,.c.big.gv,.c.big.pa{font-size:36px}
-/* BUST */
-#fx.bust{background:radial-gradient(circle at 50% 45%,#e0485ff4,#5a0f1ffa 60%,#10192efc);color:#fff;animation:fxin .15s,redflash .6s}
-@keyframes redflash{0%{background-color:#fff}15%{background-color:#ff2d4d}}
-.crk{position:relative;display:inline-block;color:transparent}
-.crk::before,.crk::after{content:attr(data-t);position:absolute;left:0;top:0;right:0;color:#fff;text-shadow:0 5px 0 #7a0f22,0 0 30px #ff2d4d}
-.crk::before{-webkit-clip-path:polygon(0 0,100% 0,100% 44%,78% 56%,58% 40%,38% 60%,18% 44%,0 56%);clip-path:polygon(0 0,100% 0,100% 44%,78% 56%,58% 40%,38% 60%,18% 44%,0 56%);animation:crkT .6s .55s both}
-.crk::after{-webkit-clip-path:polygon(0 56%,18% 44%,38% 60%,58% 40%,78% 56%,100% 44%,100% 100%,0 100%);clip-path:polygon(0 56%,18% 44%,38% 60%,58% 40%,78% 56%,100% 44%,100% 100%,0 100%);animation:crkB .6s .55s both}
-@keyframes crkT{to{transform:translate(-5px,-7px) rotate(-4deg)}}
-@keyframes crkB{to{transform:translate(6px,8px) rotate(3deg)}}
-.split{position:relative;width:78px;height:112px;animation:slam .35s both}
-.split .c{position:absolute;inset:0;outline:4px solid #e0485f;background:#ffd6dc;color:#b0102a}
-.split .h1{-webkit-clip-path:polygon(0 0,56% 0,44% 30%,62% 52%,42% 76%,54% 100%,0 100%);clip-path:polygon(0 0,56% 0,44% 30%,62% 52%,42% 76%,54% 100%,0 100%);animation:hl .55s .5s both}
-.split .h2{-webkit-clip-path:polygon(56% 0,100% 0,100% 100%,54% 100%,42% 76%,62% 52%,44% 30%);clip-path:polygon(56% 0,100% 0,100% 100%,54% 100%,42% 76%,62% 52%,44% 30%);animation:hr .55s .5s both}
-@keyframes hl{to{transform:translate(-16px,6px) rotate(-14deg)}}
-@keyframes hr{to{transform:translate(16px,10px) rotate(15deg)}}
-.bolt{position:absolute;font-size:44px;animation:up .3s .5s both}
-/* FRYS */
-#fx.freeze{background:radial-gradient(ellipse at 50% 45%,#14395af8 25%,#3aa4d8f5 75%,#dff6fff8);color:#fff}
-#fx.freeze::before{content:'';position:absolute;inset:0;box-shadow:inset 0 0 90px 40px #f2fbff;animation:frost 1s ease-out both;pointer-events:none}
-@keyframes frost{from{opacity:0;transform:scale(1.2)}to{opacity:1;transform:none}}
-#fx.freeze .ttl{color:#e9f9ff;text-shadow:0 4px 0 #1b6d98,0 0 26px #bdeeff}
-.ice{font-size:110px;line-height:1;color:#effbff;text-shadow:0 0 30px #bdeeff,0 0 8px #fff;animation:icein .8s cubic-bezier(.2,1.3,.4,1) both}
 @keyframes icein{0%{transform:rotate(-200deg) scale(0);opacity:0}100%{transform:none;opacity:1}}
-.flake{position:absolute;top:-40px;left:var(--x);font-size:var(--s);color:#fff;opacity:.9;animation:fall var(--d) var(--dl) linear both;z-index:1;pointer-events:none}
-@keyframes fall{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--sx),110vh) rotate(360deg)}}
-/* TRÆK 3 */
-#fx.take3{background:radial-gradient(circle at 50% 45%,#6b4f00f6,#10192efc 70%);color:#fff}
-#fx.take3 .ttl{color:#ffcf40;text-shadow:0 4px 0 #7a5a00,0 0 24px #ffcf4088}
-#fx.take3 .c.big{animation:dealin .5s cubic-bezier(.2,.9,.3,1.15) both}
-.c.big.dup{outline:4px solid #e0485f;background:#ffd6dc;color:#b0102a}
-.c.big.saved{outline:4px solid #8ff0c0}
-/* 2. chance / reddet */
-#fx.sc,#fx.save{background:radial-gradient(circle at 50% 45%,#8a1f3af6,#10192efc 70%);color:#fff}
-#fx.pause{background:#152848;color:#fff}
-#fx.half{background:radial-gradient(circle at 50% 45%,#7a1f55f6,#10192efc 72%);color:#fff}
-#fx.half .ttl{color:#fff;text-shadow:0 4px 0 #5a0a35,0 0 26px #ff6fae}
-#fx.extra,#fx.give{background:radial-gradient(circle at 50% 45%,#1d3a66f6,#10192efc 72%);color:#fff}
-#fx.pause .ttl,#fx.extra .ttl,#fx.give .ttl{color:#fff;text-shadow:0 4px 0 #0c2244}
 .specs{display:flex;flex-wrap:wrap;gap:6px}
 .specs button{padding:8px 10px;font-size:14px;background:#0d1628;color:#cfd9ee}
 .specs button.on{background:#ffcf40;color:#10192e}
@@ -310,26 +264,69 @@ td.n{text-align:right;font-weight:800}
 .seg.ai{flex-wrap:wrap}
 .seg.ai button{flex:1 0 36px;padding:10px 0}
 #fx.sc .ttl,#fx.save .ttl{color:#fff;text-shadow:0 4px 0 #7a0f22,0 0 26px #ff6b86}
-.shield{width:120px;height:120px;border-radius:50% 50% 50% 50%/40% 40% 60% 60%;background:radial-gradient(circle at 50% 35%,#ff8aa0,#e0485f 60%,#9b1330);display:flex;align-items:center;justify-content:center;font-size:64px;color:#fff;box-shadow:0 0 0 6px #ffffff33,0 0 40px 10px #ff6b8699;animation:icein .7s cubic-bezier(.2,1.3,.4,1) both,shglow 1s .7s ease-in-out infinite alternate}
-@keyframes shglow{to{box-shadow:0 0 0 10px #ffffff22,0 0 60px 20px #ff6b86cc}}
-.shwrap{position:relative;width:120px;height:120px}
-.shwrap .shield{position:absolute;inset:0;animation:none;box-shadow:none}
-.shwrap{filter:drop-shadow(0 0 18px #ff6b86aa)}
-.shwrap .s1{-webkit-clip-path:polygon(0 0,55% 0,45% 30%,60% 55%,42% 100%,0 100%);clip-path:polygon(0 0,55% 0,45% 30%,60% 55%,42% 100%,0 100%);animation:sh1 .6s .55s both}
-.shwrap .s2{-webkit-clip-path:polygon(55% 0,100% 0,100% 100%,42% 100%,60% 55%,45% 30%);clip-path:polygon(55% 0,100% 0,100% 100%,42% 100%,60% 55%,45% 30%);animation:sh2 .6s .55s both}
-@keyframes sh1{to{transform:translate(-14px,10px) rotate(-14deg);opacity:.55}}
-@keyframes sh2{to{transform:translate(14px,12px) rotate(12deg);opacity:.55}}
-.gone{animation:slam .35s both,gone .6s .9s both}
-@keyframes gone{to{transform:translate(70px,-50px) rotate(35deg) scale(.6);opacity:0}}
-.xmark{position:absolute;right:-16px;top:-22px;font-size:46px;color:#e0485f;font-weight:900;text-shadow:0 2px 0 #fff;animation:up .25s .45s both}
 /* SYV + vinder */
 #fx.seven,#fx.win{background:radial-gradient(circle at 50% 45%,#ffd84f,#ff8a3d 50%,#10192e 95%);color:#10192e}
 #fx.seven .ttl,#fx.win .ttl{color:#fff;text-shadow:0 5px 0 #b35a00,0 0 30px #fff6}
 #fx.seven .sub,#fx.win .sub{color:#fff}
-.bonus{font-size:64px;font-weight:900;color:#fff;background:#10192e;border-radius:20px;padding:6px 18px;animation:icein .7s .15s cubic-bezier(.2,1.3,.4,1) both;box-shadow:0 0 30px #fff8}
 .trophy{font-size:110px;animation:icein .8s both}
 .conf{position:absolute;top:42%;left:50%;width:9px;height:15px;background:var(--c);border-radius:2px;z-index:1;animation:conf var(--d) var(--dl) both;pointer-events:none}
 @keyframes conf{0%{transform:translate(0,0) rotate(0) scale(.4);animation-timing-function:cubic-bezier(.1,.8,.3,1)}28%{transform:translate(var(--bx),var(--by)) rotate(calc(var(--r)/3)) scale(1);animation-timing-function:cubic-bezier(.45,0,.8,.7)}100%{transform:translate(var(--sx),70vh) rotate(var(--r))}}
+/* Dublet: 1) nyt kort ses, 2) begge dubletter bliver røde, 3) bust/reddet i brikken */
+.pr.dupwait.is-bust{background:#1b2a4a}
+.pr.dupwait.is-bust .sm{opacity:1;filter:none}
+.pr.dupwait .bustx,.pr.dupwait .status.st-bust{visibility:hidden}
+.c.dupnew{position:relative;z-index:3}
+.c.dupnew:not(.dupred){outline:3px solid #fff;background:#fdf7ea;color:inherit;box-shadow:0 0 0 3px #ffcf40,0 6px 14px #000a;animation:dupin .45s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes dupin{0%{transform:translateY(-14px) scale(1.25);opacity:0}100%{transform:none;opacity:1}}
+.c.dupnew.dupwaitcard{visibility:hidden}
+.c.dupred{outline:3px solid #ff2d4d!important;background:#ffd6dc!important;color:#b0102a!important;animation:dupred .35s ease-in-out infinite alternate!important;position:relative;z-index:3}
+@keyframes dupred{0%{box-shadow:0 0 0 2px #ff2d4d,0 0 8px #ff2d4d}100%{box-shadow:0 0 0 4px #ff2d4d,0 0 20px 4px #ff2d4dcc}}
+.c.savedup{opacity:1}
+body.anim-reduced .c.dupred{animation:none!important;box-shadow:0 0 0 3px #ff2d4d!important}
+body.anim-reduced .c.dupnew{animation:none!important}
+/* ---------- animationer i brikken (ens på alle skærme) ---------- */
+.tfx{position:absolute;inset:0;z-index:6;border-radius:12px;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:visible;text-align:center;animation:tfxlife var(--d,1.7s) var(--el,0ms) both}
+@keyframes tfxlife{0%{opacity:0}8%{opacity:1}82%{opacity:1}100%{opacity:0}}
+.tfx::before{content:'';position:absolute;inset:0;border-radius:12px;background:var(--bg,#10192ecc);animation:tfxbg .5s var(--el,0ms) ease-out both}
+@keyframes tfxbg{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:none}}
+.tfx>*{position:relative}
+.tfx-ico{font-size:calc(var(--s)*1.25);line-height:1;font-weight:900;color:#fff;text-shadow:0 2px 0 #0006,0 0 18px #fff8;animation:icein .6s var(--el,0ms) cubic-bezier(.2,1.3,.4,1) both}
+.tfx-ttl{font-size:var(--s);line-height:1.05;font-weight:900;color:#fff;letter-spacing:.5px;text-shadow:0 3px 0 #0007;white-space:nowrap;animation:tslam .5s calc(var(--el,0ms) + .12s) cubic-bezier(.2,1.4,.4,1) both}
+.tfx-sub{font-size:max(11px,calc(var(--s)*.4));font-weight:800;color:#fff;opacity:.92;white-space:nowrap;animation:up .4s calc(var(--el,0ms) + .3s) both}
+@keyframes tslam{0%{transform:scale(2.4) rotate(var(--rot,0deg));opacity:0}100%{transform:scale(1) rotate(var(--rot,0deg));opacity:1}}
+.tfx.small{gap:0}.tfx.small .tfx-ico{display:none}
+.tfx.mine .tfx-ttl{font-size:calc(var(--s)*1.12)}
+.pr.fx-mine{animation:minering 1.2s ease-out}
+@keyframes minering{0%{box-shadow:0 0 0 0 #ffffffcc}100%{box-shadow:0 0 0 14px #ffffff00}}
+/* BUST: rødt blink, rysten (fx-shake) og stort stempel, bagefter det faste røde kryds */
+.tfx-bust{--bg:radial-gradient(circle at 50% 45%,#e0485fe8,#7a1022ee);--rot:-8deg}
+.tfx-bust .tfx-ttl{background:#e0485f;border:3px solid #fff;border-radius:10px;padding:0 .3em;box-shadow:0 4px 14px #0009}
+.tfx-bust .tfx-ico{color:#ffd0d8}
+/* FROSSET: isen breder sig over brikken */
+.tfx-freeze{--bg:linear-gradient(160deg,#eefaffee,#8fd6ffd8 50%,#d9f4ffe0)}
+.tfx-freeze::before{animation:icespread .7s var(--el,0ms) ease-out both;box-shadow:inset 0 0 0 3px #fff,inset 0 0 30px #fff}
+@keyframes icespread{0%{clip-path:circle(0% at 50% 0%)}100%{clip-path:circle(150% at 50% 0%)}}
+.tfx-freeze .tfx-ico,.tfx-freeze .tfx-ttl,.tfx-freeze .tfx-sub{color:#0d3c66;text-shadow:0 0 10px #fff,0 2px 0 #fff8}
+/* 2. chance / reddet: skjold-hjerte med udbrud */
+.tfx-sc,.tfx-save{--bg:radial-gradient(circle at 50% 40%,#ff8aa0e8,#9b1330ee)}
+.tfx-save .tfx-ico,.tfx-sc .tfx-ico{animation:icein .6s var(--el,0ms) cubic-bezier(.2,1.3,.4,1) both,shbeat .5s calc(var(--el,0ms) + .6s) 2 alternate}
+@keyframes shbeat{to{transform:scale(1.18)}}
+.tfx-save::after,.tfx-sc::after{content:'';position:absolute;left:50%;top:42%;width:40%;aspect-ratio:1;border-radius:50%;border:4px solid #fff;transform:translate(-50%,-50%) scale(.3);opacity:0;animation:burst .9s calc(var(--el,0ms) + .25s) ease-out both}
+@keyframes burst{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}100%{transform:translate(-50%,-50%) scale(2.6);opacity:0}}
+/* SYV: guld, konfetti der springer ud over kanten, +15 */
+.tfx-seven{--bg:radial-gradient(circle at 50% 45%,#ffe27aee,#c98a00ee);z-index:8}
+.tfx-seven .tfx-ttl,.tfx-seven .tfx-ico{color:#fff;text-shadow:0 3px 0 #7a4f00,0 0 16px #fff}
+.tconf{position:absolute;left:50%;top:45%;width:7px;height:11px;border-radius:2px;background:var(--c);animation:tconf 1.4s calc(var(--el,0ms) + var(--dl)) cubic-bezier(.1,.8,.3,1) both}
+@keyframes tconf{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}70%{opacity:1}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--r));opacity:0}}
+/* ÷2, Træk 3, Ekstra træk, Pause, Giv væk */
+.tfx-half{--bg:radial-gradient(circle,#d24ab0e8,#6e1458ee);--rot:-6deg}
+.tfx-take3{--bg:radial-gradient(circle,#ffa65ce8,#a8480aee)}
+.tfx-extra{--bg:radial-gradient(circle,#56e39ae8,#137a43ee)}
+.tfx-pause{--bg:radial-gradient(circle,#7d8fb8e8,#2b3d63ee)}
+.tfx-give{--bg:radial-gradient(circle,#c4a6ffe8,#5b3aa8ee)}
+body.anim-reduced .tfx *,body.anim-reduced .tfx::before,body.anim-reduced .tfx::after{animation:none!important}
+body.anim-reduced .tfx{animation:fadeq var(--d,1.4s) both!important}
+body.anim-none .tfx{display:none!important}
 /* Dæmpede animationer (standard ved prefers-reduced-motion) */
 body.anim-reduced .c.dealin,body.anim-reduced .c.glow,body.anim-reduced .c.crack,body.anim-reduced #app.shake,body.anim-reduced .fx-shake,body.anim-reduced .fx-ice,body.anim-reduced .fx-glow,body.anim-reduced .fx-stop,body.anim-reduced .fx-gold,body.anim-reduced .fxrows tr,body.anim-reduced .bottom.go .draw{animation:none!important}
 body.anim-reduced #fx *,body.anim-reduced #fx::before{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}
@@ -617,13 +614,15 @@ function holdMs(st) {
   const h = st && st.hold; if (!h) return 0;
   if (h.k === 'end') return PACE_END_MS;
   let ms = 0, n = 0;
-  (st.events || []).filter(e => e.id > h.from).forEach(e => {
+  const es = (st.events || []).filter(e => e.id > h.from);
+  es.forEach(e => {
     let d = 0;
     if (e.type === 'card') d = /^n\d/.test(e.card) ? PACE_MS.num : (e.card[0] === 'm' || e.card[0] === 'd' || e.card === 'x2') ? PACE_MS.mod : PACE_MS.special;
-    else d = PACE_MS[e.type] || 0;
+    else d = (PACE_MS[e.type] || 0) + (SET.anim === 'full' && passedOn(e) ? FLY_MS : 0) + ((e.type === 'bust' || e.type === 'save') && SET.anim !== 'none' ? DUP_MS : 0); // kort der flyver først, så brik-animationen
     if (d) { n++; ms = Math.max(ms, d); }
   });
   if (n > 2) ms += 400 * (n - 2); // flere store hændelser i ét træk (fx giv + bust + ...)
+  if (SET.anim === 'full' && es.some(passedOn) && es.some(e => e.type === 'bust' || e.type === 'save')) ms += FLY_MS; // Giv væk-kortet lander før dublet-sekvensen
   if (!ms) ms = PACE_MS.num;
   if (SET.anim === 'reduced') ms *= 0.7;
   else if (SET.anim === 'none') ms = Math.min(ms, ms >= PACE_MS.special ? 1000 : 700);
@@ -803,54 +802,14 @@ const SFX = {
 };
 const VIB_ME = { bust: [60, 40, 60, 40, 260], freeze: [30, 60, 30, 60, 30], take3: [40, 400, 40, 400, 40], save: [40, 60, 120], sc: [40, 60, 40], seven: [100, 50, 100, 50, 300], win: [100, 50, 100, 50, 300], pause: [40, 80, 40], extra: [30, 40, 30], give: [40, 60, 40], half: [60, 60, 60] };
 function fxEsc(v, i, subj) { const meIdx = v.players.findIndex(p => p.id === myId); return i === meIdx ? (subj ? 'Du' : 'dig') : esc((v.players[i] || {}).name || '?'); }
-function flakes(n) { let h = ''; for (let k = 0; k < n; k++) h += `<span class="flake" style="--x:${Math.random() * 100}%;--s:${14 + Math.random() * 22}px;--d:${1.3 + Math.random() * 1.2}s;--dl:${Math.random() * 0.6}s;--sx:${(Math.random() - 0.5) * 80}px">❄</span>`; return h; }
 function confetti(n) { const C = ['#ffcf40', '#e0485f', '#7fd8ff', '#3ddc84', '#ffffff', '#ff8a3d', '#b28dff']; let h = ''; for (let k = 0; k < n; k++) { const bx = (Math.random() - 0.5) * 380; h += `<span class="conf" style="--c:${C[k % C.length]};--d:${2.2 + Math.random() * 1.2}s;--dl:${Math.random() * 0.25}s;--bx:${bx}px;--by:${-120 - Math.random() * 260}px;--sx:${bx * 1.5}px;--r:${(Math.random() - 0.5) * 1440}deg"></span>`; } return h; }
 function numOf(c) { return String(c || '').slice(1); }
-// Byg overlay-indhold for én stor hændelse
+// Fuldskærm bruges kun til sejren (spillets afslutning). Alt andet spilles i spillerens brik.
 function fxHtml(o, v) {
-  const e = o.e, P = i => fxEsc(v, i, false), Su = i => fxEsc(v, i, true);
-  const who = (a, b) => a === b ? '' : `<div class="who"><b>${Su(a)}</b><span class="ar">➜</span><b>${P(b)}</b></div>`;
-  switch (e.type) {
-    case 'bust': return {
-      dur: 1800, html: `<div class="vis"><div class="split"><span class="c big h1 n${numOf(e.card)}">${numOf(e.card)}</span><span class="c big h2 n${numOf(e.card)}">${numOf(e.card)}</span></div></div>
-      <div class="ttl"><span class="crk" data-t="BUST!">BUST!</span></div><div class="sub">${Su(e.p)} røg ud!</div>
-      <div class="sm2">Trak ${numOf(e.card)} igen${e.f3 ? ' under Træk 3' : ''}${e.lost > 0 ? ` · ${e.lost} point tabt` : ''}</div>` };
-    case 'freeze': return {
-      dur: 1700, html: `${flakes(reducedFx() ? 0 : 22)}<div class="vis"><div class="ice">❄</div></div><div class="ttl">Frosset!</div>${who(e.p, e.t)}
-      <div class="sub">${e.p === e.t ? `${Su(e.p)} frøs ${e.p === v.players.findIndex(p => p.id === myId) ? 'dig' : 'sig'} selv` : `${Su(e.p)} frøs ${P(e.t)}`}</div>
-      <div class="sm2">${e.pts} point i banken · ude af runden</div>` };
-    case 'take3': {
-      const cs = o.cards || [];
-      const cards = cs.map((x, k) => cardHtml(x.card, 'big' + (x.type === 'bust' ? ' dup' : x.type === 'save' ? ' saved' : '')).replace('class="c', `style="animation-delay:${0.35 + k * 0.45}s" class="c`)).join('');
-      return { dur: Math.max(1500, 900 + cs.length * 450), html: `<div class="vis">${cards || '<span class="c big f3">3<i>TRÆK 3</i></span>'}</div><div class="ttl">Træk 3!</div>${who(e.p, e.t)}
-      <div class="sub">${e.p === e.t ? `${Su(e.t)} tager selv Træk 3` : `${Su(e.t)} skal vende 3 kort`}</div>` };
-    }
-    case 'save': return {
-      dur: 1700, html: `<div class="vis" style="gap:26px"><div class="shwrap"><div class="shield s1">♥</div><div class="shield s2">♥</div></div><div class="gone" style="position:relative"><span class="c big dup n${numOf(e.card)}">${numOf(e.card)}</span><span class="xmark">✕</span></div></div>
-      <div class="ttl">Reddet!</div><div class="sub">${Su(e.p)} trak ${numOf(e.card)} igen</div><div class="sm2">2. chance brugt – dubletten smides væk</div>` };
-    case 'sc': return {
-      dur: 1300, html: `<div class="vis"><div class="shield">♥</div></div><div class="ttl" style="font-size:clamp(44px,14vw,70px)">2. chance!</div>${who(e.p, e.t)}
-      <div class="sub">${e.p === e.t ? `${Su(e.t)} fik en 2. chance` : `${Su(e.p)} gav ${P(e.t)} en 2. chance`}</div><div class="sm2">Redder én gang fra bust</div>` };
-    case 'seven': return {
-      dur: 2000, html: `${confetti(reducedFx() ? 0 : 60)}<div class="vis"><div class="bonus">+15</div></div><div class="ttl">SYV!</div>
-      <div class="sub">${Su(e.p)} fik 7 forskellige tal!</div><div class="sm2">${e.pts} point i runden – runden slutter</div>` };
-    case 'win': return {
-      dur: 2600, html: `${confetti(reducedFx() ? 0 : 90)}<div class="vis"><div class="trophy">🏆</div></div><div class="ttl" style="font-size:clamp(40px,13vw,64px)">${Su(e.p)} vinder!</div>
+  const e = o.e, Su = i => fxEsc(v, i, true);
+  if (e.type !== 'win') return null;
+  return { dur: 2600, html: `${confetti(reducedFx() ? 0 : 90)}<div class="vis"><div class="trophy">🏆</div></div><div class="ttl" style="font-size:clamp(40px,13vw,64px)">${Su(e.p)} vinder!</div>
       <div class="sub">${e.pts} point</div>` };
-    case 'pause': return {
-      dur: 1500, html: `<div class="vis"><div class="ice" style="font-size:84px">Ⅱ</div></div><div class="ttl" style="font-size:clamp(40px,13vw,68px)">Pause!</div>
-      <div class="sub">${Su(e.p)} springes over én gang</div><div class="sm2">Bliver i runden og kan trække igen bagefter</div>` };
-    case 'extra': return {
-      dur: 1200, html: `<div class="vis"><span class="c big et">+<i>EKSTRA</i></span></div><div class="ttl" style="font-size:clamp(36px,11vw,60px)">Ekstra træk!</div>
-      <div class="sub">${Su(e.p)} trækker to kort mere</div><div class="sm2">Bust på det første stopper det andet</div>` };
-    case 'half': return {
-      dur: 1500, html: `<div class="vis"><span class="c big ${e.card === 'gh' ? 'gh' : 'h2'}">÷2<i>${e.card === 'gh' ? 'GIV ÷2' : 'HALVER'}</i></span></div><div class="ttl" style="font-size:clamp(48px,15vw,76px)">÷2!</div>${who(e.p, e.t)}
-      <div class="sub">${e.p === e.t ? `${Su(e.t)} får ÷2` : `${Su(e.p)} gav ${P(e.t)} ÷2`}</div><div class="sm2">Rundens point halveres</div>` };
-    case 'give': return {
-      dur: 1600, html: `<div class="vis">${e.card ? cardHtml(e.card, 'big' + (e.bust ? ' dup' : '')) : '<span class="c big gv">➜<i>GIV</i></span>'}</div><div class="ttl" style="font-size:clamp(36px,12vw,64px)">Giv væk!</div>${e.t === undefined ? '' : who(e.p, e.t)}
-      <div class="sub">${e.none ? `${Su(e.p)} har ingen talkort` : e.bust ? `${P(e.t)} gik bust` : `${Su(e.p)} gav ${numOf(e.card)} væk`}</div>` };
-  }
-  return null;
 }
 function fxPush(o) {
   fxQ.push(o);
@@ -925,14 +884,6 @@ function cueText(e, v, after) {
   return un(t);
 }
 const CUE_KIND = { bust: 'bust', freeze: 'action', take3: 'action', sc: 'action', save: 'action', seven: 'seven', win: 'seven', pause: 'action', extra: 'action', give: 'action', half: 'action' };
-// Fuldskærm kun for den, kortet rammer. Alle andre ser brikken (og et flyvende kort, hvis det gives videre).
-function seesOverlay(e, meIdx) {
-  if (e.type === 'freeze' || e.type === 'take3' || e.type === 'sc' || e.type === 'half') return e.t === meIdx;
-  if (e.type === 'give') return e.none ? e.p === meIdx : e.t === meIdx;
-  if (e.type === 'pause' || e.type === 'extra' || e.type === 'bust' || e.type === 'save' || e.type === 'seven') return e.p === meIdx;
-  if (e.type === 'win') return true;
-  return meIdx >= 0 && (e.t !== undefined ? e.t : e.p) === meIdx;
-}
 function specLine(e, v) {
   const nm = i => ((v.players[i] || {}).name) || '?';
   if (e.type === 'freeze') return e.p === e.t ? nm(e.p) + ' bruger Frys på sig selv' : nm(e.p) + ' sender Frys til ' + nm(e.t);
@@ -978,39 +929,87 @@ function flyCard(from, to, card, line, opt) {
   fxBusy(1250 + (opt.delay || 0));
   setTimeout(() => { if (fly.parentNode) fly.remove(); fxAddCls(fxRow(to), 'fx-land'); if (opt.land) opt.land(); }, 1200 + (opt.delay || 0));
 }
-// Effekter oven på en brik (efter bekræftet valg)
-function tileFx(i, kind, delay) {
+// ---------- animationer i brikken (ens på alle skærme) ----------
+// Hver stor hændelse spilles inde i den ramte spillers brik. Tekst/ikon skaleres efter brikkens størrelse (8 spillere = små brikker).
+const TILE_MS = { bust: 1900, seven: 2200, save: 1800, freeze: 1800, take3: 1600, sc: 1600, half: 1600, give: 1500, pause: 1600, extra: 1500 };
+const FLY_MS = 1150; // kort der gives videre flyver først hen til målet
+const PASSED = { freeze: 'fr', take3: 'f3', sc: 'sc', half: 'gh', give: 'gv' };
+function passedOn(e) { return !!PASSED[e.type] && e.t !== undefined && e.p !== e.t && !e.none; }
+function tileInfo(e) {
+  const n = numOf(e.card);
+  switch (e.type) {
+    case 'bust': return { ico: '✕', ttl: 'BUST!', sub: e.lost > 0 ? `−${e.lost} p` : `${n} igen` };
+    case 'freeze': return { ico: '❄', ttl: 'FROSSET', sub: `${e.pts} p i banken` };
+    case 'take3': return { ico: '3', ttl: 'TRÆK 3', sub: '3 kort' };
+    case 'sc': return { ico: '♥', ttl: '2. CHANCE', sub: 'redder én gang' };
+    case 'save': return { ico: '♥', ttl: 'REDDET!', sub: `${n} smides væk` };
+    case 'seven': return { ico: '7', ttl: 'SYV! +15', sub: `${e.pts} p`, conf: 1 };
+    case 'half': return { ico: '÷2', ttl: e.card === 'gh' ? 'GIV ÷2' : 'HALVERET', sub: 'point halveres' };
+    case 'extra': return { ico: '+2', ttl: 'EKSTRA TRÆK', sub: '2 kort mere' };
+    case 'pause': return { ico: 'Ⅱ', ttl: 'PAUSE', sub: 'over 1 gang' };
+    case 'give': return e.none ? { ico: '➜', ttl: 'INGEN TALKORT', sub: 'Giv væk' } : { ico: '+' + n, ttl: 'MODTAGET', sub: 'fra ' + '?' };
+  }
+  return null;
+}
+function tileConf(n, w, h) { const C = ['#ffcf40', '#e0485f', '#7fd8ff', '#3ddc84', '#ffffff', '#ff8a3d', '#b28dff']; let o = ''; for (let k = 0; k < n; k++) { const a = Math.random() * Math.PI * 2, r = 0.3 + Math.random() * 0.3; o += `<i class="tconf" style="--c:${C[k % C.length]};--x:${Math.round(Math.cos(a) * r * w)}px;--y:${Math.round(Math.sin(a) * r * h)}px;--r:${Math.round((Math.random() - 0.5) * 720)}deg;--dl:${Math.round(Math.random() * 200)}ms"></i>`; } return o; }
+function tileAnim(i, e, v, delay, mine) {
   if (SET.anim === 'none') return;
-  fxBusy((delay || 0) + 1000);
+  const info = tileInfo(e); if (!info) return;
+  if (e.type === 'give' && !e.none) info.sub = 'fra ' + esc(((v.players[e.p] || {}).name || '?').replace(/ \(AI\)$/, ''));
+  const dur = SET.anim === 'reduced' ? Math.round(TILE_MS[e.type] * 0.75) : TILE_MS[e.type];
+  fxBusy((delay || 0) + dur);
   setTimeout(() => {
     const row = fxRow(i); if (!row) return;
+    const r = row.getBoundingClientRect();
+    const sz = Math.max(11, Math.min(46, r.width * 0.86 / (info.ttl.length * 0.68), r.height * 0.24)); // titlen skal kunne være i brikken
     const el = document.createElement('div');
-    if (kind === 'ice') { el.className = 'icecap'; el.textContent = '❄'; }
-    else { el.className = 'tilestamp ' + kind; el.textContent = kind === 'sc' ? '♥' : kind === 'f3' ? '3' : '÷2'; }
+    el.className = 'tfx tfx-' + e.type + (mine ? ' mine' : '') + (r.height < 150 ? ' small' : '');
+    el.style.setProperty('--s', sz.toFixed(1) + 'px'); el.style.setProperty('--d', dur + 'ms');
+    el.innerHTML = `${info.conf && SET.anim === 'full' ? tileConf(r.width < 200 ? 14 : 24, r.width, r.height) : ''}<div class="tfx-ico">${info.ico}</div><div class="tfx-ttl">${info.ttl}</div><div class="tfx-sub">${info.sub}</div>`;
     el.dataset.t0 = Date.now(); row.appendChild(el);
-    setTimeout(() => { if (el.parentNode) el.remove(); }, 1900);
+    if (SET.anim === 'full') {
+      if (e.type === 'bust') { fxCard(row, e.card, 'crack', 0, true); fxAddCls(row, 'fx-shake'); }
+      else if (e.type === 'freeze') fxAddCls(row, 'fx-ice');
+      else if (e.type === 'seven') fxAddCls(row, 'fx-gold');
+      else fxAddCls(row, 'fx-glow');
+    }
+    if (mine) fxAddCls(row, 'fx-mine');
+    setTimeout(() => { if (el.parentNode) el.remove(); }, dur + 60);
   }, delay || 0);
 }
-function tileBust(row, mode) {
-  if (!row) return;
-  const el = document.createElement('div');
-  el.className = mode === 'full' ? 'bustpop' : 'bustnote';
-  el.textContent = mode === 'full' ? 'BUST!' : 'Bust';
-  row.appendChild(el);
-  setTimeout(() => { if (el.parentNode) el.remove(); }, mode === 'full' ? 900 : 1500);
+// Dublet (bust eller reddet af 2. chance): 1) det nye kort ses, 2) det og dubletten i hånden bliver røde, 3) så bust/reddet.
+// Holdes i dupFx og påføres igen efter hver ny tegning, så sekvensen overlever opdateringer.
+const DUP_SHOW = 800, DUP_RED = 700, DUP_MS = DUP_SHOW + DUP_RED;
+let dupFx = {};
+function applyDupFx() {
+  const now = Date.now();
+  Object.keys(dupFx).forEach(p => {
+    const d = dupFx[p], el = now - d.t0;
+    const row = fxRow(p), sm = row && row.querySelector('.sm');
+    if (el >= DUP_MS) { // trin 3: lad tilstanden (rød brik, kryds) tage over
+      delete dupFx[p];
+      if (row) { row.classList.remove('dupwait'); row.querySelectorAll('.dupnew,.dupred').forEach(c => c.classList.remove('dupnew', 'dupred', 'dupwaitcard')); row.querySelectorAll('.c.savedup').forEach(c => c.remove()); }
+      return;
+    }
+    if (!sm) return;
+    row.classList.add('dupwait');
+    let nc = d.save ? sm.querySelector('.c.savedup') : sm.querySelector('.c.dup');
+    if (!nc) { sm.insertAdjacentHTML('beforeend', cardHtml(d.card, d.save ? 'savedup' : 'dup')); nc = sm.lastElementChild; }
+    nc.classList.add('dupnew'); nc.classList.toggle('dupwaitcard', el < 0);
+    const old = [...sm.querySelectorAll(`.c[data-c="${d.card}"]`)].filter(c => c !== nc && !c.classList.contains('dup') && !c.classList.contains('savedup'));
+    const red = el >= DUP_SHOW;
+    [nc].concat(old).forEach(c => c.classList.toggle('dupred', red));
+  });
 }
-const TILE_TXT = { sc: '♥ 2. chance', save: '♥ Reddet!', seven: 'SYV! +15', pause: 'Ⅱ Pause', extra: '+ Ekstra træk', half: '÷2' };
-function spectate(e, v) {
-  const line = specLine(e, v);
-  const tgt = e.t !== undefined ? e.t : e.p;
-  if (TILE_TXT[e.type] && SET.anim !== 'none') fxFloat(fxRow(tgt), TILE_TXT[e.type], e.type === 'seven' ? '' : 'sc');
-  const passed = (e.type === 'freeze' || e.type === 'take3' || e.type === 'give' || e.type === 'sc' || e.type === 'half') && e.t !== undefined && e.p !== e.t && !e.none;
-  if (SET.anim !== 'full' || !passed) { if (line && SET.anim === 'reduced') toast(line, 'action', 2000); return; }
-  if (!passed) return;
-  if (e.type === 'take3') { // Træk 3: tre kort flyver af sted mod målet
-    [0, 1, 2].forEach(k => flyCard(e.p, e.t, 'f3', k ? '' : line, { delay: k * 160, rot: (k - 1) * 9 }));
-    return;
-  }
+function startDupFx(p, card, save, delay) {
+  if (SET.anim === 'none') return;
+  dupFx[p] = { card, save, t0: Date.now() + (delay || 0) };
+  applyDupFx();
+  [0, DUP_SHOW, DUP_MS].forEach(t => setTimeout(applyDupFx, (delay || 0) + t + 5));
+}
+// Kort der gives videre (Frys, Træk 3, 2. chance, Giv ÷2, Giv væk) flyver fra giverens brik til målets – hos alle
+function flyPassed(e) {
+  if (e.type === 'take3') { [0, 1, 2].forEach(k => flyCard(e.p, e.t, 'f3', '', { delay: k * 160, rot: (k - 1) * 9 })); return; }
   if (e.type === 'give' && e.card) { // Giv væk: kortet forlader giverens brik og lander hos modtageren
     const src = fxRow(e.p), sm = src && src.querySelector('.sm');
     let ghost = null;
@@ -1020,15 +1019,13 @@ function spectate(e, v) {
       const tmp = document.createElement('div'); tmp.innerHTML = cardHtml(e.card, 'leaving'); ghost = tmp.firstElementChild; sm.insertBefore(ghost, after || null); setTimeout(() => { if (ghost && ghost.parentNode) ghost.remove(); }, 950); }
     const dst = fxRow(e.t), got = dst && [...dst.querySelectorAll(`.c[data-c="${e.card}"]`)].pop();
     if (got) got.classList.add('arriving');
-    flyCard(e.p, e.t, e.card, line, { fromEl: ghost, land: () => { const r = fxRow(e.t), c = r && [...r.querySelectorAll(`.c[data-c="${e.card}"]`)].pop(); if (c) { c.classList.remove('arriving'); c.classList.add('dealin'); } } });
+    flyCard(e.p, e.t, e.card, '', { fromEl: ghost, land: () => { const r = fxRow(e.t), c = r && [...r.querySelectorAll(`.c[data-c="${e.card}"]`)].pop(); if (c) { c.classList.remove('arriving'); c.classList.add('dealin'); } } });
     return;
   }
-  const card = e.type === 'freeze' ? 'fr' : e.type === 'sc' ? 'sc' : e.type === 'half' ? 'gh' : (e.card || 'gv');
-  flyCard(e.p, e.t, card, line);
+  flyCard(e.p, e.t, PASSED[e.type] === 'gv' ? (e.card || 'gv') : PASSED[e.type], '');
 }
-// Flyver der et kort hen til målet hos denne seer? (så brik-effekten venter på landingen)
-function flies(e, meIdx) { return SET.anim === 'full' && e.t !== undefined && e.p !== e.t && !seesOverlay(e, meIdx); }
-// Afspil hændelser: små effekter direkte på kort/rækker, store som overlay i kø
+// Afspil hændelser: små effekter på kort, store som animation i den ramte spillers brik (ens på alle skærme).
+// Kun sejren vises i fuld skærm.
 function playEvents(fresh, v) {
   const meIdx = v.players.findIndex(p => p.id === myId);
   if (SET.anim === 'none') {
@@ -1047,33 +1044,29 @@ function playEvents(fresh, v) {
     if (e.type === 'card') {
       const mod = e.card[0] === 'm' || e.card === 'x2' || e.card[0] === 'd';
       fxCard(row, e.card, mod ? 'glow' : 'dealin', d);
-      if (mod) { fxFloat(row, G.label(e.card)); fxAddCls(row, 'fx-gold'); }
-    } else if (e.type === 'bust') {
-      if (SET.anim === 'full') { fxCard(row, e.card, 'crack', 0, true); fxAddCls(row, 'fx-shake'); }
-      if (e.p !== meIdx) tileBust(row, SET.anim);
+      if (mod) { fxFloat(row, G.label(e.card)); fxAddCls(row, 'fx-gold'); fxBusy(1200); }
+      if (SET.anim === 'full' && 'fr f3 sc et gv pa h2 gh'.split(' ').indexOf(e.card) >= 0) fxGhost(row, e.card);
     } else if (e.type === 'stop') {
       fxAddCls(row, 'fx-stop'); fxFloat(row, 'Stopper · ' + e.pts + ' p', 'stop');
-    } else if (e.type === 'freeze') {
-      fxAddCls(fxRow(e.t), 'fx-ice'); tileFx(e.t, 'ice', flies(e, meIdx) ? 1150 : 0);
-    } else if (e.type === 'half') {
-      fxAddCls(fxRow(e.t), 'fx-glow'); if (e.card === 'gh') tileFx(e.t, 'half', flies(e, meIdx) ? 1150 : 0);
-    } else if (e.type === 'take3' && e.p !== e.t) {
-      tileFx(e.t, 'f3', flies(e, meIdx) ? 1450 : 0);
-    } else if (e.type === 'sc' || e.type === 'save') {
-      if (e.type === 'sc' && e.p !== e.t) tileFx(e.t, 'sc', flies(e, meIdx) ? 1150 : 0);
-      const t = e.type === 'sc' ? e.t : e.p; fxAddCls(fxRow(t), 'fx-glow');
-    } else if (e.type === 'seven') {
-      fxAddCls(row, 'fx-gold');
     } else if (e.type === 'roundEnd') {
       const t = $('summary'); if (t) t.classList.add('fxrows');
-    }
-    if (e.type === 'card' && SET.anim === 'full' && 'fr f3 sc et gv pa h2 gh'.split(' ').indexOf(e.card) >= 0) fxGhost(row, e.card);
-    if (FX_BIG[e.type]) {
-      if (seesOverlay(e, meIdx)) {
-        const o = { e, v };
-        if (e.type === 'take3') o.cards = fresh.slice(k + 1).filter(x => x.f3 && x.p === e.t && (x.type === 'card' || x.type === 'bust' || x.type === 'save')).slice(0, 3);
-        fxPush(o);
-      } else if (e.type !== 'bust') spectate(e, v);
+    } else if (e.type === 'win') {
+      fxPush({ e, v });
+    } else if (FX_BIG[e.type]) {
+      const tgt = e.t !== undefined && !e.none ? e.t : e.p, mine = tgt === meIdx, passed = passedOn(e);
+      if (passed && SET.anim === 'full') flyPassed(e);
+      else if (passed && SET.anim === 'reduced') { const line = specLine(e, v); if (line) toast(line, 'action', 2000); }
+      let delay = passed && SET.anim === 'full' ? FLY_MS : 0;
+      if (e.type === 'bust' || e.type === 'save') {
+        // kom kortet med Giv væk? så lander det først
+        const viaGive = fresh.slice(0, k).some(x => x.type === 'give' && x.t === e.p && x.card === e.card && x.p !== e.p);
+        const pre = viaGive && SET.anim === 'full' ? FLY_MS : 0;
+        startDupFx(e.p, e.card, e.type === 'save', pre);
+        delay = pre + DUP_MS;
+      }
+      tileAnim(tgt, e, v, delay, mine);
+      setTimeout(() => buzz(mine ? VIB_ME[e.type] : 30), delay);
+      if (SFX[e.type]) setTimeout(() => SFX[e.type](), delay);
     }
   });
 }
@@ -1292,10 +1285,11 @@ function renderGame() {
     }
     return `<div class="pr${i === actor ? ' turn' : ''}${st === 'bust' ? ' is-bust' : ''}${p.status === 'stopped' && !p.seven && i !== actor ? ' is-stopped' : ''}${pc}" data-p="${i}"${click}>${extra}${st === 'bust' ? '<span class="bustx">✕</span>' : ''}<span class="nm"><b>${esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name)}</b>${p.ai ? '<span class="ain"> (AI)</span>' : ''}${p.id === myId ? '<span class="dig">Dig</span>' : ''}</span><span class="pts">${G.roundScore(p)}<small>${p.total} i alt</small></span><span class="meta">${statusChip(p)}${p.skip ? '<span class="giver">over 1×</span>' : ''}${i === v.dealer ? '<span class="giver">giver</span>' : ''}${p.online ? '' : '<span class="offsmall">offline</span>'}</span><div class="sm">${hand}</div></div>`;
   }).join('') + '</div>';
-  const keepFx = [...document.querySelectorAll('#grid .pr > .icecap, #grid .pr > .tilestamp')].map(el => [el.parentNode.dataset.p, el]);
+  const keepFx = [...document.querySelectorAll('#grid .pr > .tfx')].map(el => [el.parentNode.dataset.p, el]);
   $('app').innerHTML = h;
   // brik-effekter overlever en ny tegning (fortsætter hvor de var)
-  keepFx.forEach(([pi, el]) => { const r = fxRow(pi); if (r) { el.style.animationDelay = -(Date.now() - (+el.dataset.t0 || Date.now())) + 'ms'; r.appendChild(el); } });
+  applyDupFx();
+  keepFx.forEach(([pi, el]) => { const r = fxRow(pi); if (r) { el.style.setProperty('--el', -(Date.now() - (+el.dataset.t0 || Date.now())) + 'ms'); r.appendChild(el); } });
   // knapper
   const canAct = v.phase === 'play' && !v.pending && !v.hold && v.stage === 'turns' && v.turn === meIdx && !sending;
   const b = $('bottom'); b.style.display = v.phase === 'play' ? 'flex' : 'none';
