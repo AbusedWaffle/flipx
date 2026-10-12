@@ -988,11 +988,12 @@ function applyDupFx() {
     const row = fxRow(p), sm = row && row.querySelector('.sm');
     if (el >= DUP_MS) { // trin 3: lad tilstanden (rød brik, kryds) tage over
       delete dupFx[p];
-      if (row) { row.classList.remove('dupwait'); row.querySelectorAll('.dupnew,.dupred').forEach(c => c.classList.remove('dupnew', 'dupred', 'dupwaitcard')); row.querySelectorAll('.c.savedup').forEach(c => c.remove()); }
+      if (row) { setPts(row, d.post); row.classList.remove('dupwait'); row.querySelectorAll('.dupnew,.dupred').forEach(c => c.classList.remove('dupnew', 'dupred', 'dupwaitcard')); row.querySelectorAll('.c.savedup').forEach(c => c.remove()); }
       return;
     }
     if (!sm) return;
     row.classList.add('dupwait');
+    setPts(row, d.pre); // trin 1–2: pointene fra før bust står stadig
     let nc = d.save ? sm.querySelector('.c.savedup') : sm.querySelector('.c.dup');
     if (!nc) { sm.insertAdjacentHTML('beforeend', cardHtml(d.card, d.save ? 'savedup' : 'dup')); nc = sm.lastElementChild; }
     nc.classList.add('dupnew'); nc.classList.toggle('dupwaitcard', el < 0);
@@ -1001,9 +1002,11 @@ function applyDupFx() {
     [nc].concat(old).forEach(c => c.classList.toggle('dupred', red));
   });
 }
-function startDupFx(p, card, save, delay) {
+function setPts(row, n) { const t = row && row.querySelector('.pts'); if (t && t.firstChild && t.firstChild.nodeType === 3 && n != null) t.firstChild.nodeValue = String(n); }
+function startDupFx(p, card, save, delay, v) {
   if (SET.anim === 'none') return;
-  dupFx[p] = { card, save, t0: Date.now() + (delay || 0) };
+  const pl = v && v.players[p];
+  dupFx[p] = { card, save, t0: Date.now() + (delay || 0), pre: pl ? G.roundScore(Object.assign({}, pl, { status: 'active' })) : null, post: pl ? G.roundScore(pl) : null };
   applyDupFx();
   [0, DUP_SHOW, DUP_MS].forEach(t => setTimeout(applyDupFx, (delay || 0) + t + 5));
 }
@@ -1061,7 +1064,7 @@ function playEvents(fresh, v) {
         // kom kortet med Giv væk? så lander det først
         const viaGive = fresh.slice(0, k).some(x => x.type === 'give' && x.t === e.p && x.card === e.card && x.p !== e.p);
         const pre = viaGive && SET.anim === 'full' ? FLY_MS : 0;
-        startDupFx(e.p, e.card, e.type === 'save', pre);
+        startDupFx(e.p, e.card, e.type === 'save', pre, v);
         delay = pre + DUP_MS;
       }
       tileAnim(tgt, e, v, delay, mine);
