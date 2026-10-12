@@ -276,8 +276,8 @@ td.n{text-align:right;font-weight:800}
 .pr.dupwait.is-bust .sm{opacity:1;filter:none}
 .pr.dupwait .bustx,.pr.dupwait .status.st-bust{visibility:hidden}
 .c.dupnew{position:relative;z-index:3}
-.c.dupnew:not(.dupred){outline:3px solid #fff;background:#fdf7ea;color:inherit;box-shadow:0 0 0 3px #ffcf40,0 6px 14px #000a;animation:dupin .45s cubic-bezier(.2,1.3,.4,1) both}
-@keyframes dupin{0%{transform:translateY(-14px) scale(1.25);opacity:0}100%{transform:none;opacity:1}}
+.c.dupnew:not(.dupred){outline:2px solid #ffffffcc;outline-offset:1px;animation:dupin .35s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes dupin{0%{transform:translateY(-8px) scale(1.12)}100%{transform:none}}
 .c.dupnew.dupwaitcard{visibility:hidden}
 .c.dupred{outline:3px solid #ff2d4d!important;background:#ffd6dc!important;color:#b0102a!important;animation:dupred .35s ease-in-out infinite alternate!important;position:relative;z-index:3}
 @keyframes dupred{0%{box-shadow:0 0 0 2px #ff2d4d,0 0 8px #ff2d4d}100%{box-shadow:0 0 0 4px #ff2d4d,0 0 20px 4px #ff2d4dcc}}
@@ -988,15 +988,16 @@ function applyDupFx() {
     const row = fxRow(p), sm = row && row.querySelector('.sm');
     if (el >= DUP_MS) { // trin 3: lad tilstanden (rød brik, kryds) tage over
       delete dupFx[p];
-      if (row) { setPts(row, d.post); row.classList.remove('dupwait'); row.querySelectorAll('.dupnew,.dupred').forEach(c => c.classList.remove('dupnew', 'dupred', 'dupwaitcard')); row.querySelectorAll('.c.savedup').forEach(c => c.remove()); }
+      if (row) { setPts(row, d.post); row.classList.remove('dupwait'); row.querySelectorAll('.dupnew,.dupred').forEach(c => { if (c.classList.contains('dupnew') && !c.classList.contains('savedup')) c.classList.add('dup'); c.classList.remove('dupnew', 'dupred', 'dupwaitcard'); }); row.querySelectorAll('.c.savedup').forEach(c => c.remove()); }
       return;
     }
     if (!sm) return;
     row.classList.add('dupwait');
     setPts(row, d.pre); // trin 1–2: pointene fra før bust står stadig
-    let nc = d.save ? sm.querySelector('.c.savedup') : sm.querySelector('.c.dup');
+    let nc = sm.querySelector('.c.dupnew') || (d.save ? sm.querySelector('.c.savedup') : sm.querySelector('.c.dup'));
     if (!nc) { sm.insertAdjacentHTML('beforeend', cardHtml(d.card, d.save ? 'savedup' : 'dup')); nc = sm.lastElementChild; }
-    nc.classList.add('dupnew'); nc.classList.toggle('dupwaitcard', el < 0);
+    nc.classList.remove('dup'); // trin 1–2: kortets normale farver (dup-stilen er rød)
+    nc.classList.add('dupnew'); nc.classList.toggle('dupwaitcard', el < 0); if (el >= 0) nc.classList.remove('arriving'); // landet: vis kortet fuldt fra første billede
     const old = [...sm.querySelectorAll(`.c[data-c="${d.card}"]`)].filter(c => c !== nc && !c.classList.contains('dup') && !c.classList.contains('savedup'));
     const red = el >= DUP_SHOW;
     [nc].concat(old).forEach(c => c.classList.toggle('dupred', red));
