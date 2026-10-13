@@ -488,7 +488,7 @@ applySettings();
 // ---------- lyd / vibration / wakelock ----------
 let actx = null;
 document.addEventListener('pointerdown', () => { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} }, { passive: true });
-function beep(force) { try { if (!actx || !SET.sound) return; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(0.15, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.25); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.25); } catch (e) {} }
+function beep(force) { try { if (!actx || !SET.sound) return; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(0.1, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.25); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.25); } catch (e) {} }
 function buzz(p) { try { if (SET.vib && CAN_VIB) navigator.vibrate(p); } catch (e) {} }
 let turnVibeT = null;
 function stopTurnVibe() { if (turnVibeT) { clearInterval(turnVibeT); turnVibeT = null; } }
@@ -787,10 +787,16 @@ function tone(f, t0, dur, type, vol, f2) {
     o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
   } catch (e) {}
 }
+// Alle lyde går gennem sfx(), så de kan måles i test (window.__sfxLog). De udløses fra samme tidslinje som animationerne.
+function sfx(n) { if (!SFX[n]) return; if (window.__sfxLog) window.__sfxLog.push({ n, t: Date.now() }); SFX[n](); }
+function sfxAt(n, ms) { if (ms > 0) setTimeout(() => sfx(n), ms); else sfx(n); }
 const SFX = {
   bust: () => { tone(300, 0, 0.5, 'sawtooth', 0.07, 60); tone(150, 0.05, 0.4, 'square', 0.04, 50); },
   freeze: () => [1320, 1760, 2090, 2640].forEach((f, k) => tone(f, k * 0.07, 0.35, 'sine', 0.05)),
-  take3: () => [0, 1, 2].forEach(k => tone(600 + k * 150, 0.35 + k * 0.45, 0.12, 'triangle', 0.07)),
+  take3: () => { tone(600, 0, 0.1, 'triangle', 0.06); tone(900, 0.09, 0.16, 'triangle', 0.06); }, // Træk 3 lander (selve kortene har hver deres card-lyd)
+  card: () => { tone(1250, 0, 0.05, 'triangle', 0.035); tone(720, 0.012, 0.07, 'sine', 0.03); }, // kort lander i brikken
+  fly: () => tone(380, 0, 0.22, 'sine', 0.03, 950), // kort letter (flyver til en anden brik)
+  dup: () => { tone(440, 0, 0.11, 'triangle', 0.06); tone(311, 0.11, 0.22, 'triangle', 0.06); }, // dubletterne bliver røde
   save: () => { tone(500, 0, 0.15, 'triangle', 0.07); tone(990, 0.15, 0.3, 'triangle', 0.07); },
   sc: () => tone(660, 0, 0.35, 'sine', 0.07, 990),
   seven: () => [523, 659, 784, 1047, 1319].forEach((f, k) => tone(f, k * 0.09, 0.3, 'triangle', 0.07)),
@@ -833,7 +839,7 @@ function fxNext() {
   el.className = 'show ' + o.e.type;
   const meIdx = o.v.players.findIndex(p => p.id === myId), mine = o.e.t !== undefined ? o.e.t === meIdx : o.e.p === meIdx;
   buzz(mine || o.e.type === 'win' ? VIB_ME[o.e.type] : 30);
-  if (SFX[o.e.type]) SFX[o.e.type]();
+  sfx(o.e.type);
   if (o.e.type === 'bust' && !reducedFx()) { const a = $('app'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(() => a.classList.remove('shake'), 600); }
   fxTimer = setTimeout(fxDone, dur); fxBusy(dur + 200);
 }
@@ -1038,7 +1044,7 @@ function playEvents(fresh, v) {
     const lines = big.map(([e, k]) => cueText(e, v, fresh.slice(k + 1))).slice(-3);
     const last = big[big.length - 1][0], mineEv = big.map(x => x[0]).find(e => (e.t !== undefined ? e.t : e.p) === meIdx);
     toast(lines.join('\n'), 'cue ' + CUE_KIND[last.type], 2600 + 900 * lines.length); fxBusy(1000);
-    const ev = mineEv || last; buzz(mineEv || ev.type === 'win' ? VIB_ME[ev.type] : 30); if (SFX[ev.type]) SFX[ev.type]();
+    const ev = mineEv || last; buzz(mineEv || ev.type === 'win' ? VIB_ME[ev.type] : 30); sfx(ev.type);
     return;
   }
   let stagger = 0;
@@ -1048,6 +1054,7 @@ function playEvents(fresh, v) {
     if (e.type === 'card') {
       const mod = e.card[0] === 'm' || e.card === 'x2' || e.card[0] === 'd';
       fxCard(row, e.card, mod ? 'glow' : 'dealin', d);
+      sfxAt('card', d);
       if (mod) { fxFloat(row, G.label(e.card)); fxAddCls(row, 'fx-gold'); fxBusy(1200); }
       if (SET.anim === 'full' && 'fr f3 sc et gv pa h2 gh'.split(' ').indexOf(e.card) >= 0) fxGhost(row, e.card);
     } else if (e.type === 'stop') {
@@ -1058,19 +1065,21 @@ function playEvents(fresh, v) {
       fxPush({ e, v });
     } else if (FX_BIG[e.type]) {
       const tgt = e.t !== undefined && !e.none ? e.t : e.p, mine = tgt === meIdx, passed = passedOn(e);
-      if (passed && SET.anim === 'full') flyPassed(e);
-      else if (passed && SET.anim === 'reduced') { const line = specLine(e, v); if (line) toast(line, 'action', 2000); }
+      if (passed && SET.anim === 'full') { flyPassed(e); sfx('fly'); if (e.type === 'give' && e.card) sfxAt('card', FLY_MS); }
+      else if (passed && SET.anim === 'reduced') { const line = specLine(e, v); if (line) toast(line, 'action', 2000); if (e.type === 'give' && e.card) sfx('card'); }
       let delay = passed && SET.anim === 'full' ? FLY_MS : 0;
       if (e.type === 'bust' || e.type === 'save') {
         // kom kortet med Giv væk? så lander det først
         const viaGive = fresh.slice(0, k).some(x => x.type === 'give' && x.t === e.p && x.card === e.card && x.p !== e.p);
         const pre = viaGive && SET.anim === 'full' ? FLY_MS : 0;
         startDupFx(e.p, e.card, e.type === 'save', pre, v);
+        if (!viaGive) sfxAt('card', pre); // dubletten lander (via Giv væk: lyden kommer ved landing)
+        sfxAt('dup', pre + DUP_SHOW);
         delay = pre + DUP_MS;
       }
       tileAnim(tgt, e, v, delay, mine);
       setTimeout(() => buzz(mine ? VIB_ME[e.type] : 30), delay);
-      if (SFX[e.type]) setTimeout(() => SFX[e.type](), delay);
+      sfxAt(e.type, delay);
     }
   });
 }
