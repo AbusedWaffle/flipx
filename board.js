@@ -22,9 +22,10 @@ const G = window.EnTil;
 let db = null;
 let auth = null;
 
+function cleanBadges(b) { return Array.isArray(b) ? b.filter(k => typeof k === 'string' && /^[a-z0-9]{1,16}$/.test(k)).slice(0, 20) : []; }
 function rowOf(id, data) {
   const x = data || {};
-  return { id: id, name: String(x.name || '').trim(), games: x.games | 0, wins: x.wins | 0 };
+  return { id: id, name: String(x.name || '').trim(), games: x.games | 0, wins: x.wins | 0, badges: cleanBadges(x.badges) };
 }
 
 // Gamle kodeord-versioner gemte en nøgle her. Den slettes og bruges aldrig.
@@ -79,7 +80,7 @@ async function loadPlayers(uids) {
   if (mock) {
     list.forEach(u => {
       const p = (mock.players || []).find(x => x.id === u);
-      if (p) out[u] = { name: p.name, games: p.games | 0, wins: p.wins | 0 };
+      if (p) out[u] = { name: p.name, games: p.games | 0, wins: p.wins | 0, badges: cleanBadges(p.badges) };
     });
     return out;
   }
@@ -88,7 +89,7 @@ async function loadPlayers(uids) {
     const snap = await getDoc(doc(db, 'players', u));
     if (snap.exists()) {
       const r = rowOf(u, snap.data());
-      out[u] = { name: r.name, games: r.games, wins: r.wins };
+      out[u] = { name: r.name, games: r.games, wins: r.wins, badges: r.badges };
     }
   }));
   return out;
@@ -114,16 +115,39 @@ async function record(uid, name, won) {
     row.name = next.name; row.games = next.games; row.wins = next.wins;
     return { name: next.name, games: next.games, wins: next.wins };
   }
-  await setDoc(doc(db, 'players', uid), {
-    name: next.name,
-    games: next.games,
-    wins: next.wins,
-    updatedAt: serverTimestamp()
-  });
+  const keep = cleanBadges(prev.badges); // badges må ikke forsvinde, når karrieren skrives
+  const data = { name: next.name, games: next.games, wins: next.wins, updatedAt: serverTimestamp() };
+  if (keep.length) data.badges = keep;
+  await setDoc(doc(db, 'players', uid), data);
   return { name: next.name, games: next.games, wins: next.wins };
 }
 
-window.FlipLive = { ready: ready, loadBoard: loadBoard, loadPlayers: loadPlayers, record: record };
+// Badges: kun egen række, listen må kun vokse (Firestore-reglerne håndhæver det). Separat skrivning (merge), så
+// karrieretallene gemmes, selv om reglerne endnu ikke tillader badges (så afvises kun denne skrivning).
+async function saveBadges(uid, list) {
+  await ready;
+  if (!uid || uid !== window.flipUid) throw new Error('kan kun skrive egen række');
+  const clean = cleanBadges(list);
+  if (mock) {
+    mock.writes = mock.writes || [];
+    if (mock.badgesDenied) { const e = new Error('permission-denied'); e.code = 'permission-denied'; throw e; }
+    let row = (mock.players || []).find(p => p.id === uid);
+    if (!row) throw new Error('ingen række');
+    const merged = cleanBadges((row.badges || []).concat(clean.filter(k => (row.badges || []).indexOf(k) < 0)));
+    mock.writes.push({ uid: uid, badges: merged });
+    row.badges = merged;
+    return merged;
+  }
+  if (!auth || !auth.currentUser || auth.currentUser.uid !== uid) throw new Error('kan kun skrive egen række');
+  const snap = await getDoc(doc(db, 'players', uid));
+  if (!snap.exists()) throw new Error('ingen række');
+  const old = cleanBadges(snap.data().badges);
+  const merged = cleanBadges(old.concat(clean.filter(k => old.indexOf(k) < 0)));
+  if (merged.length === old.length) return merged;
+  await setDoc(doc(db, 'players', uid), { badges: merged, updatedAt: serverTimestamp() }, { merge: true });
+  return merged;
+}
+window.FlipLive = { ready: ready, loadBoard: loadBoard, loadPlayers: loadPlayers, record: record, saveBadges: saveBadges };
 ready.then(uid => {
   if (uid) { if (window.onFlipUid) window.onFlipUid(uid); }
   else if (window.onFlipNoProfile) window.onFlipNoProfile();

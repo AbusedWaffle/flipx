@@ -271,6 +271,44 @@ td.n{text-align:right;font-weight:800}
 .trophy{font-size:110px;animation:icein .8s both}
 .conf{position:absolute;top:42%;left:50%;width:9px;height:15px;background:var(--c);border-radius:2px;z-index:1;animation:conf var(--d) var(--dl) both;pointer-events:none}
 @keyframes conf{0%{transform:translate(0,0) rotate(0) scale(.4);animation-timing-function:cubic-bezier(.1,.8,.3,1)}28%{transform:translate(var(--bx),var(--by)) rotate(calc(var(--r)/3)) scale(1);animation-timing-function:cubic-bezier(.45,0,.8,.7)}100%{transform:translate(var(--sx),70vh) rotate(var(--r))}}
+/* Revanche, opsummering, badges */
+.rematch{margin-top:10px}
+.rematch .primary.ready{background:#3ddc84;color:#0d2a17}
+.rmlist{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.rm{font-size:13px;font-weight:800;padding:3px 9px;border-radius:20px;background:#10192e;color:#9fb0d0}
+.rm.on{background:#1f5c3a;color:#bff5d4}
+.rmrow{display:flex;gap:8px;margin-top:8px}.rmrow .ghost{flex:1}
+.recap{margin-top:14px;padding-top:12px;border-top:1px solid #2b3d63}
+.hls{display:flex;flex-direction:column;gap:6px}
+.hl{display:flex;gap:10px;align-items:center;background:#24365c;border-radius:12px;padding:8px 10px;font-size:14px}
+.hl b{font-size:13px;color:#ffcf40}
+.hico{font-size:24px;width:30px;text-align:center;flex:none;font-weight:900}
+.newbadges{margin-top:8px;font-size:13px;font-weight:800;color:#bff5d4}
+.bdg{display:inline-block;background:#1f5c3a;border-radius:12px;padding:2px 8px;margin:2px 2px 0 0;cursor:pointer}
+.bdgs{margin-left:6px}
+.bdg-i{display:inline-block;font-size:14px;margin-right:2px;cursor:pointer;line-height:1;vertical-align:-1px}
+.rtab-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rtab{border-collapse:collapse;font-size:13px;width:100%}
+.rtab th,.rtab td{padding:4px 5px;text-align:right;border-bottom:1px solid #2b3d63;white-space:nowrap}
+.rtab th{color:#9fb0d0;font-weight:800}
+.rtab td.rn{text-align:left;font-weight:800;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.rtab td.neg{color:#ff5a6e}.rtab td.zero{color:#6f82a8}.rtab td.tot{font-weight:900;color:#ffcf40}
+.rtab tr.me td.rn{color:#7fd8ff}
+/* Risikomåler */
+.risk{position:relative;display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:900;padding:1px 6px 1px 6px;border-radius:20px;background:#10192e;color:#fff;white-space:nowrap;line-height:1.5;overflow:hidden}
+.risk i{position:absolute;left:0;bottom:0;height:2px;width:var(--r);background:currentColor;opacity:.9}
+.risk.r-lo{color:#3ddc84}.risk.r-mid{color:#ffcf40}.risk.r-hi{color:#ff5a6e}
+.risk.saved{color:#7fd8ff}
+.risk small{font-size:9px;font-weight:800;opacity:.9}
+.grid.crowded .risk small{display:none}
+.grid.crowded .risk,.grid.many .risk{font-size:10px}
+.aistyle{font-size:11px;color:#9fb0d0;font-weight:700}
+/* AI-replik: lille taleboble i feltet */
+.aisay{position:absolute;left:8px;right:8px;top:calc(var(--fs,15px)*2.6 + 14px);z-index:6;background:#fff;color:#14203a;font-weight:800;font-size:12px;line-height:1.25;padding:5px 8px;border-radius:10px;box-shadow:0 4px 12px #0008;pointer-events:none;animation:sayin .25s ease-out both;text-align:left;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:calc(2.5em + 10px)}
+.aisay::before{content:'';position:absolute;top:-6px;left:14px;border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+.grid.crowded .aisay{font-size:10.5px;padding:3px 6px;max-height:calc(2.5em + 6px);left:4px;right:4px;top:calc(var(--fs,15px)*2.4 + 6px)}
+@keyframes sayin{0%{transform:translateY(6px) scale(.9);opacity:0}100%{transform:none;opacity:1}}
+body.anim-reduced .aisay,body.anim-none .aisay{animation:none}
 /* Dublet: 1) nyt kort ses, 2) begge dubletter bliver røde, 3) bust/reddet i brikken */
 .pr.dupwait.is-bust{background:#1b2a4a}
 .pr.dupwait.is-bust .sm{opacity:1;filter:none}
@@ -450,7 +488,7 @@ function loadSettings() {
   const s = LS.get('settings', {}) || {};
   const steps = [2, 3, 5, 10, 15];
   return { anim: ANIM_MODES.includes(s.anim) ? s.anim : (RM.matches ? 'reduced' : 'full'), sound: s.sound !== false, vib: s.vib !== false,
-    vibKeep: s.vibKeep === true, vibEvery: steps.indexOf(+s.vibEvery) >= 0 ? +s.vibEvery : 5 };
+    vibKeep: s.vibKeep === true, vibEvery: steps.indexOf(+s.vibEvery) >= 0 ? +s.vibEvery : 5, lines: s.lines !== false };
 }
 let SET = loadSettings();
 function applySettings() {
@@ -463,6 +501,7 @@ function setSetting(k, v) {
   if (k === 'sound' && v) beep(true);
   if (k === 'vib' && v) buzz(40, true);
   if (k === 'vib' || k === 'vibKeep' || k === 'vibEvery') syncTurnVibe();
+  if (k === 'lines' && !v) { aiSay = {}; if (view && view.phase !== 'lobby') render(); }
   renderSettings();
 }
 const reducedFx = () => SET.anim === 'reduced';
@@ -478,6 +517,7 @@ function renderSettings() {
       <div class="seg every" id="segEvery">${[2,3,5,10,15].map(n => `<button data-every="${n}" class="${SET.vibEvery === n ? 'on' : ''}" ${SET.vib && CAN_VIB ? '' : 'disabled'} onclick="setSetting('vibEvery',${n})">${n}</button>`).join('')}</div>
       <div class="hint" id="everyHint">hvert ${SET.vibEvery}. sekund</div>
     </div>
+    <div class="trow"><span>AI-replikker<small>Computerspillerne siger små kommentarer i deres felt</small></span><button class="sw ${SET.lines ? 'on' : ''}" id="swLines" role="switch" aria-checked="${SET.lines}" aria-label="AI-replikker" onclick="setSetting('lines',${!SET.lines})"></button></div>
     <div class="hint" style="margin-top:4px">Gælder kun denne telefon.</div>
     <button class="primary" style="margin-top:12px" onclick="closeSettings()">Luk</button>`;
 }
@@ -574,6 +614,8 @@ function onHostData(c, d) {
     if (old && old !== c) try { old.close(); } catch (e) {}
     setFuid(p, d.uid);
     publish();
+  } else if (d.t === 'rematch' && c.pid && conns[c.pid] === c) {
+    hostRematchVote(c.pid, !!d.on);
   } else if (d.t === 'uid' && c.pid && conns[c.pid] === c) {
     const p = S.players.find(x => x.id === c.pid);
     if (setFuid(p, d.uid)) publish();
@@ -655,7 +697,7 @@ function hostAi(n) {
   S.players = humans;
   G.pickAiNames(humans.map(p => p.name), n).forEach((name, i) => {
     const p = G.addPlayer(S, 'ai' + i + Math.random().toString(36).slice(2, 7), name + ' (AI)');
-    p.ai = true;
+    p.ai = true; p.style = G.aiStyle(p.name);
   });
   publish();
 }
@@ -689,6 +731,23 @@ function scheduleAi() {
   }, 600 + Math.floor(Math.random() * 601));
 }
 function hostNext() { G.nextRound(S); publish(); }
+// ---------- revanche ----------
+function hostRematchVote(pid, on) {
+  if (role !== 'host' || !S || S.phase !== 'over') return;
+  S.rematch = S.rematch || {};
+  if (on) S.rematch[pid] = 1; else delete S.rematch[pid];
+  if (G.rematchState(S).all) return hostRematchNow();
+  publish();
+}
+function hostRematchNow() {
+  if (role !== 'host' || !S || S.phase !== 'over') return;
+  stopAi(); const r = G.rematch(S); if (!r.ok) toast(r.err); publish();
+}
+function voteRematch() {
+  const on = !(view && view.rematch && view.rematch[myId]);
+  if (role === 'host') hostRematchVote(myId, on);
+  else if (hostConn && hostConn.open) send(hostConn, { t: 'rematch', on });
+}
 function hostNewGame() { G.backToLobby(S); G.renameAi(S); publish(); }
 function hostKick(pid) { const i = S.players.findIndex(p => p.id === pid); if (i <= 0 || S.phase !== 'lobby') return; const c = conns[pid]; if (c) { send(c, { t: 'reject', reason: 'Værten fjernede dig fra spillet.' }); delete conns[pid]; setTimeout(() => c.close(), 500); } S.players.splice(i, 1); publish(); }
 function hostTarget(v) { const t = parseInt(v, 10); if (t > 0 && S.phase === 'lobby') { S.target = t; publish(); } }
@@ -696,7 +755,9 @@ function hostDeck(n) { n = +n; if (role !== 'host' || !S || S.phase !== 'lobby' 
 function hostMinus(k) { if (role !== 'host' || !S || S.phase !== 'lobby' || ['off','a','b','c'].indexOf(k) < 0) return; S.minus = k; publish(); }
 function hostMinusChance(c) { if (role !== 'host' || !S || S.phase !== 'lobby' || ['low','std','high'].indexOf(c) < 0) return; S.minusChance = c; publish(); }
 function hostChance(c) { if (role !== 'host' || !S || S.phase !== 'lobby' || ['low','std','high'].indexOf(c) < 0) return; S.chance = c; publish(); }
+const AI_STYLE_TXT = { careful: 'forsigtig', normal: 'normal', wild: 'vild' };
 const CHANCE_NAME = { low: 'Lille', std: 'Standard', high: 'Høj' };
+function hostRisk(on) { if (role !== 'host' || !S || S.phase !== 'lobby') return; S.risk = !!on; publish(); }
 function hostSpec(k) { if (role !== 'host' || !S || S.phase !== 'lobby' || !S.specials || !(k in S.specials)) return; S.specials[k] = !S.specials[k]; publish(); }
 
 // ---------- KLIENT ----------
@@ -788,25 +849,51 @@ function tone(f, t0, dur, type, vol, f2) {
   } catch (e) {}
 }
 // Alle lyde går gennem sfx(), så de kan måles i test (window.__sfxLog). De udløses fra samme tidslinje som animationerne.
+function cardSfx(c) { if (/^n/.test(c)) return 'card'; if (c[0] === 'm' || c === 'x2') return 'plus'; if (c[0] === 'd') return 'minus'; return SFX['sig-' + c] ? 'sig-' + c : 'card'; }
 function sfx(n) { if (!SFX[n]) return; if (window.__sfxLog) window.__sfxLog.push({ n, t: Date.now() }); SFX[n](); }
 function sfxAt(n, ms) { if (ms > 0) setTimeout(() => sfx(n), ms); else sfx(n); }
+// Støj (til isknæk, swish og kasse-lyde) – syntetiseret, ingen lydfiler
+function noise(t0, dur, vol, f, q, type) {
+  try {
+    if (!actx || actx.state !== 'running' || !SET.sound) return;
+    const n = Math.max(1, Math.floor(actx.sampleRate * dur)), buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+    for (let k = 0; k < n; k++) d[k] = Math.random() * 2 - 1;
+    const src = actx.createBufferSource(), flt = actx.createBiquadFilter(), g = actx.createGain(), t = actx.currentTime + t0;
+    src.buffer = buf; flt.type = type || 'bandpass'; flt.frequency.value = f || 3000; flt.Q.value = q || 1;
+    g.gain.setValueAtTime(vol || 0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(flt).connect(g).connect(actx.destination); src.start(t); src.stop(t + dur + 0.02);
+  } catch (e) {}
+}
 const SFX = {
   bust: () => { tone(300, 0, 0.5, 'sawtooth', 0.07, 60); tone(150, 0.05, 0.4, 'square', 0.04, 50); },
-  freeze: () => [1320, 1760, 2090, 2640].forEach((f, k) => tone(f, k * 0.07, 0.35, 'sine', 0.05)),
+  freeze: () => { noise(0, 0.12, 0.09, 4200, 2); noise(0.07, 0.08, 0.06, 6000, 3); [2640, 2090, 3135].forEach((f, k) => tone(f, 0.1 + k * 0.06, 0.3, 'sine', 0.035)); }, // isknæk + klirr
+  // signaturlyde når specialkortet trækkes (spilles i stedet for card-lyden)
+  'sig-fr': () => { noise(0, 0.06, 0.07, 5000, 2); tone(1760, 0.03, 0.12, 'sine', 0.04); },
+  'sig-f3': () => [0, 1, 2, 3, 4, 5].forEach(k => tone(500 + k * 110, k * 0.045, 0.05, 'square', 0.025)), // spilleautomat-løb
+  'sig-sc': () => { tone(1047, 0, 0.25, 'sine', 0.05); tone(1568, 0.06, 0.3, 'sine', 0.035); }, // skjold-klokke
+  'sig-et': () => { tone(1250, 0, 0.05, 'triangle', 0.04); tone(1500, 0.1, 0.05, 'triangle', 0.04); tone(900, 0.16, 0.12, 'sine', 0.03, 1400); }, // dobbelt-træk
+  'sig-gv': () => noise(0, 0.25, 0.05, 1800, 0.8, 'bandpass'), // swish
+  'sig-pa': () => { noise(0, 0.02, 0.1, 2500, 4); noise(0.12, 0.02, 0.08, 2000, 4); }, // pause-klik
+  'sig-h2': () => tone(392, 0, 0.18, 'sawtooth', 0.03, 370),
+  'sig-gh': () => tone(392, 0, 0.18, 'sawtooth', 0.03, 370),
+  plus: () => { tone(1320, 0, 0.08, 'triangle', 0.04); tone(1760, 0.06, 0.14, 'triangle', 0.04); }, // + / ×2: glimt
+  minus: () => { tone(520, 0, 0.1, 'triangle', 0.05); tone(390, 0.09, 0.18, 'triangle', 0.05, 330); }, // minuskort: fald
+  say: () => { tone(620, 0, 0.05, 'sine', 0.03); tone(760, 0.06, 0.05, 'sine', 0.03); tone(560, 0.12, 0.06, 'sine', 0.025); }, // AI-pludren
   take3: () => { tone(600, 0, 0.1, 'triangle', 0.06); tone(900, 0.09, 0.16, 'triangle', 0.06); }, // Træk 3 lander (selve kortene har hver deres card-lyd)
   card: () => { tone(1250, 0, 0.05, 'triangle', 0.035); tone(720, 0.012, 0.07, 'sine', 0.03); }, // kort lander i brikken
   fly: () => tone(380, 0, 0.22, 'sine', 0.03, 950), // kort letter (flyver til en anden brik)
   dup: () => { tone(440, 0, 0.11, 'triangle', 0.06); tone(311, 0.11, 0.22, 'triangle', 0.06); }, // dubletterne bliver røde
   save: () => { tone(500, 0, 0.15, 'triangle', 0.07); tone(990, 0.15, 0.3, 'triangle', 0.07); },
-  sc: () => tone(660, 0, 0.35, 'sine', 0.07, 990),
+  sc: () => { tone(784, 0, 0.3, 'sine', 0.06); tone(1175, 0.08, 0.35, 'sine', 0.045); tone(1568, 0.16, 0.4, 'sine', 0.03); }, // skjold-klokke
   seven: () => [523, 659, 784, 1047, 1319].forEach((f, k) => tone(f, k * 0.09, 0.3, 'triangle', 0.07)),
   win: () => [523, 659, 784, 1047, 784, 1047].forEach((f, k) => tone(f, k * 0.12, 0.35, 'triangle', 0.07)),
-  pause: () => tone(440, 0, 0.25, 'sine', 0.06, 330),
-  extra: () => tone(700, 0, 0.18, 'triangle', 0.07, 980),
-  give: () => tone(520, 0, 0.2, 'triangle', 0.07, 680),
-  half: () => { tone(880, 0, 0.18, 'triangle', 0.07, 660); tone(660, 0.18, 0.28, 'triangle', 0.07, 330); }
+  pause: () => { noise(0, 0.025, 0.1, 2200, 4); tone(440, 0.04, 0.25, 'sine', 0.05, 330); }, // klik + dyk
+  extra: () => { tone(700, 0, 0.12, 'triangle', 0.06, 980); tone(900, 0.12, 0.14, 'triangle', 0.06, 1260); }, // to op
+  give: () => { tone(2093, 0, 0.09, 'triangle', 0.05); tone(2637, 0.07, 0.25, 'triangle', 0.05); noise(0, 0.05, 0.05, 6000, 3); }, // kasse "ka-tjing" ved landing
+  half: () => [466, 440, 415, 349].forEach((f, k) => tone(f, k * 0.17, k === 3 ? 0.5 : 0.16, 'sawtooth', 0.035, k === 3 ? 330 : 0)) // trist trombone
 };
-const VIB_ME = { bust: [60, 40, 60, 40, 260], freeze: [30, 60, 30, 60, 30], take3: [40, 400, 40, 400, 40], save: [40, 60, 120], sc: [40, 60, 40], seven: [100, 50, 100, 50, 300], win: [100, 50, 100, 50, 300], pause: [40, 80, 40], extra: [30, 40, 30], give: [40, 60, 40], half: [60, 60, 60] };
+// Vibrations-signaturer (kun når hændelsen rammer dig). Din tur: [200, 100, 200] (uændret).
+const VIB_ME = { bust: [320, 80, 90], freeze: [25, 35, 25, 35, 25, 35, 25, 35, 160], take3: [40, 400, 40, 400, 40], save: [30, 40, 30, 120, 220], sc: [40, 60, 40], seven: [70, 40, 70, 40, 70, 40, 420], win: [100, 50, 100, 50, 300], pause: [40, 80, 40], extra: [30, 40, 30], give: [120, 60, 30, 30, 30], half: [60, 60, 60] };
 function fxEsc(v, i, subj) { const meIdx = v.players.findIndex(p => p.id === myId); return i === meIdx ? (subj ? 'Du' : 'dig') : esc((v.players[i] || {}).name || '?'); }
 function confetti(n) { const C = ['#ffcf40', '#e0485f', '#7fd8ff', '#3ddc84', '#ffffff', '#ff8a3d', '#b28dff']; let h = ''; for (let k = 0; k < n; k++) { const bx = (Math.random() - 0.5) * 380; h += `<span class="conf" style="--c:${C[k % C.length]};--d:${2.2 + Math.random() * 1.2}s;--dl:${Math.random() * 0.25}s;--bx:${bx}px;--by:${-120 - Math.random() * 260}px;--sx:${bx * 1.5}px;--r:${(Math.random() - 0.5) * 1440}deg"></span>`; } return h; }
 function numOf(c) { return String(c || '').slice(1); }
@@ -1034,6 +1121,37 @@ function flyPassed(e) {
   }
   flyCard(e.p, e.t, PASSED[e.type] === 'gv' ? (e.card || 'gv') : PASSED[e.type], '');
 }
+// ---------- AI-replikker (pr. spiller-indstilling: SET.lines) ----------
+const AI_LINES = {
+  careful: { bold: ['Uha… det var tæt på.', 'Jeg plejer ikke at gøre det her!', 'Puha, hjertet banker.'], stop: ['Sikkert er sikkert.', 'Jeg tager pointene og går.', 'Nok for mig.'], frozen: ['Fint, jeg hviler mig.', 'Okay, jeg står stille.'], bust: ['Det var derfor, jeg var forsigtig!', 'Øv… jeg vidste det.'], win: ['Langsomt og sikkert vinder!'] },
+  normal: { bold: ['Lad os se…', 'Én til!', 'Det tør jeg godt.'], stop: ['Den er god nok.', 'Jeg stopper her.'], frozen: ['Hey! Det var uhøfligt.', 'Brrr…'], bust: ['Ups.', 'Det gik ikke.'], win: ['Godt spillet, alle sammen!'] },
+  wild: { bold: ['Mere! MERE!', 'Risiko er mit mellemnavn!', 'Ingen bremser!'], stop: ['Kedeligt… men okay.', 'Jeg kommer igen!'], frozen: ['Nej nej nej, jeg var lige i gang!', 'Tø mig op!'], bust: ['Det var det værd!', 'Igen! Igen!'], win: ['Hvem sagde forsigtig?!'] }
+};
+const SAY_MS = 2400;
+let aiSay = {};
+// Samme replik på alle skærme: valget afhænger kun af hændelsens id.
+function aiLine(v, e, kind, i, delay) {
+  if (!SET.lines) return;
+  const p = v.players[i]; if (!p || !p.ai) return;
+  if ((kind === 'bold' || kind === 'stop') && (e.id * 7) % 10 >= 6) return; // ikke hver gang
+  const L = (AI_LINES[p.style] || AI_LINES.normal)[kind]; if (!L) return;
+  const txt = L[e.id % L.length], t0 = Date.now() + (delay || 0);
+  aiSay[i] = { txt, t0, until: t0 + SAY_MS, id: e.id };
+  setTimeout(() => { if (aiSay[i] && aiSay[i].id === e.id) { if (e.id % 3 === 0) sfx('say'); paintSay(); } }, delay || 0);
+  setTimeout(() => { if (aiSay[i] && aiSay[i].id === e.id) { delete aiSay[i]; paintSay(); } }, (delay || 0) + SAY_MS);
+}
+// Tegnes direkte i felterne (og igen efter hver ny tegning), uden at genopbygge siden
+function paintSay() {
+  const now = Date.now();
+  document.querySelectorAll('#grid .aisay').forEach(el => { const a = aiSay[el.dataset.p]; if (!a || now < a.t0 || now >= a.until) el.remove(); });
+  Object.keys(aiSay).forEach(i => {
+    const a = aiSay[i], row = fxRow(i); if (!row || now < a.t0 || now >= a.until) return;
+    if (row.querySelector('.aisay')) return;
+    const b = document.createElement('div'); b.className = 'aisay'; b.dataset.p = i; b.textContent = a.txt;
+    if (now - a.t0 > 300) b.style.animation = 'none';
+    row.appendChild(b);
+  });
+}
 // Afspil hændelser: små effekter på kort, store som animation i den ramte spillers brik (ens på alle skærme).
 // Kun sejren vises i fuld skærm.
 function playEvents(fresh, v) {
@@ -1054,18 +1172,21 @@ function playEvents(fresh, v) {
     if (e.type === 'card') {
       const mod = e.card[0] === 'm' || e.card === 'x2' || e.card[0] === 'd';
       fxCard(row, e.card, mod ? 'glow' : 'dealin', d);
-      sfxAt('card', d);
+      sfxAt(cardSfx(e.card), d);
       if (mod) { fxFloat(row, G.label(e.card)); fxAddCls(row, 'fx-gold'); fxBusy(1200); }
       if (SET.anim === 'full' && 'fr f3 sc et gv pa h2 gh'.split(' ').indexOf(e.card) >= 0) fxGhost(row, e.card);
+      if (e.risk >= 30 && !e.f3) aiLine(v, e, 'bold', e.p, d);
     } else if (e.type === 'stop') {
+      aiLine(v, e, 'stop', e.p, 0);
       fxAddCls(row, 'fx-stop'); fxFloat(row, 'Stopper · ' + e.pts + ' p', 'stop');
     } else if (e.type === 'roundEnd') {
       const t = $('summary'); if (t) t.classList.add('fxrows');
     } else if (e.type === 'win') {
       fxPush({ e, v });
+      aiLine(v, e, 'win', e.p, 0);
     } else if (FX_BIG[e.type]) {
       const tgt = e.t !== undefined && !e.none ? e.t : e.p, mine = tgt === meIdx, passed = passedOn(e);
-      if (passed && SET.anim === 'full') { flyPassed(e); sfx('fly'); if (e.type === 'give' && e.card) sfxAt('card', FLY_MS); }
+      if (passed && SET.anim === 'full') { flyPassed(e); sfx(e.type === 'give' ? 'sig-gv' : 'fly'); if (e.type === 'give' && e.card) sfxAt('card', FLY_MS); }
       else if (passed && SET.anim === 'reduced') { const line = specLine(e, v); if (line) toast(line, 'action', 2000); if (e.type === 'give' && e.card) sfx('card'); }
       let delay = passed && SET.anim === 'full' ? FLY_MS : 0;
       if (e.type === 'bust' || e.type === 'save') {
@@ -1078,6 +1199,8 @@ function playEvents(fresh, v) {
         delay = pre + DUP_MS;
       }
       tileAnim(tgt, e, v, delay, mine);
+      if (e.type === 'bust') aiLine(v, e, 'bust', e.p, delay);
+      else if (e.type === 'freeze' && e.t !== e.p) aiLine(v, e, 'frozen', e.t, delay);
       setTimeout(() => buzz(mine ? VIB_ME[e.type] : 30), delay);
       sfxAt(e.type, delay);
     }
@@ -1099,6 +1222,13 @@ function handHtml(p, big) {
   const other = p.mods.map(c => cardHtml(c)).concat(p.acts.map(c => cardHtml(c)));
   if (!big) return nums.concat(other).join('');
   return { nums, other };
+}
+// Risikomåler: kun i feltet hos den, der har tur (tydeligst). 2. chance = 'reddes'.
+function riskChip(v, i) {
+  if (!v.risk || v.phase !== 'play' || v.stage !== 'turns' || v.pending || v.turn !== i) return '';
+  const r = v.risk[i], p = v.players[i]; if (r == null || !p || p.status !== 'active') return '';
+  const lvl = r >= 35 ? 'hi' : r >= 15 ? 'mid' : 'lo';
+  return `<span class="risk r-${lvl}${p.sc ? ' saved' : ''}" title="Risiko for bust ved næste kort${p.sc ? ' – 2. chance redder' : ''}"><i style="--r:${r}%"></i>${p.sc ? '🛡 ' : ''}${r} %${p.sc ? ' <small>reddes</small>' : ''}</span>`;
 }
 function statusChip(p) { return p.seven ? '<span class="status st-seven">SYV!</span>' : `<span class="status st-${p.status}">${STATUS[p.status]}</span>`; }
 function me() { return view && view.players.find(p => p.id === myId); }
@@ -1217,7 +1347,7 @@ function renderLobby() {
   let h = '';
   if (errMsg) h += `<div class="err">${esc(errMsg)}</div>`;
   h += `<div class="card" style="text-align:center"><div class="hint">${host ? 'Lad de andre scanne koden eller skrive spilkoden' : 'Du er med! Venter på at værten starter spillet…'}</div><div class="roomcode" id="roomcode">${esc(room)}</div><div class="qr">${qr}</div><div class="link">${esc(link)}</div>${host && navigator.share ? `<button class="ghost" style="margin-top:10px" onclick="navigator.share({title:'FlipX',text:'Spil FlipX med mig',url:'${esc(link)}'}).catch(()=>{})">Del link</button>` : ''}</div>`;
-  h += `<div class="card"><div class="lbl" style="margin-top:0">Spillere (${v.players.length}/8)</div><div class="plist">` + v.players.map((p, i) => `<div class="pl"><span class="dot ${p.online ? 'on' : 'off'}"></span><span class="grow">${esc(p.name)}${p.id === myId ? ' (dig)' : ''}${i === 0 ? ' 👑' : ''}</span>${host && i > 0 && !p.ai ? `<button class="x" onclick="hostKick('${esc(p.id)}')">✕</button>` : ''}</div>`).join('') + '</div>';
+  h += `<div class="card"><div class="lbl" style="margin-top:0">Spillere (${v.players.length}/8)</div><div class="plist">` + v.players.map((p, i) => `<div class="pl"><span class="dot ${p.online ? 'on' : 'off'}"></span><span class="grow">${esc(p.name)}${p.id === myId ? ' (dig)' : ''}${i === 0 ? ' 👑' : ''}${p.ai && p.style ? ` <span class="aistyle">${AI_STYLE_TXT[p.style]}</span>` : ''}</span>${host && i > 0 && !p.ai ? `<button class="x" onclick="hostKick('${esc(p.id)}')">✕</button>` : ''}</div>`).join('') + '</div>';
   const sp = v.specials || { fr: true, f3: true, sc: true, et: false, gv: false, pa: false };
   const max = v.deckMax || 12;
   const onNames = SPEC_LIST.filter(([k]) => sp[k]).map(([, n]) => n).join(', ') || 'ingen';
@@ -1228,9 +1358,10 @@ function renderLobby() {
   const mi = ['a','b','c'].indexOf(v.minus) >= 0 ? v.minus : 'off', mch = v.minusChance === 'low' || v.minusChance === 'high' ? v.minusChance : 'std';
   h += `<div class="lbl">Minuskort</div><div class="seg deck minus" id="minusSeg">${MINUS_LIST.map(([k, n]) => `<button type="button" data-minus="${k}" class="${mi === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostMinus('${k}')">${n}</button>`).join('')}</div>`;
   if (mi !== 'off') h += `<div class="lbl">Chance for minuskort</div><div class="seg deck" id="minusChanceSeg">${[['low','Lille'],['std','Standard'],['high','Høj']].map(([k, n]) => `<button type="button" data-mchance="${k}" class="${mch === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostMinusChance('${k}')">${n}</button>`).join('')}</div>`;
-  h += `<div class="hint" id="rulesLine">Talkort 0–${max}. Chance: ${CHANCE_NAME[ch]}. Med: ${esc(onNames)}. Minuskort: ${mi === 'off' ? 'fra' : MINUS_LIST.find(x => x[0] === mi)[1].replace(/ /g, '/') + ' (' + CHANCE_NAME[mch] + ')'}.</div>`;
+  h += `<div class="hint" id="rulesLine">Talkort 0–${max}. Chance: ${CHANCE_NAME[ch]}. Med: ${esc(onNames)}. Minuskort: ${mi === 'off' ? 'fra' : MINUS_LIST.find(x => x[0] === mi)[1].replace(/ /g, '/') + ' (' + CHANCE_NAME[mch] + ')'}.${v.risk ? ' Risikomåler: til.' : ''}</div>`;
   h += `<div class="hint">Minuskort trækkes fra rundens point efter de andre modifikatorer og kan give minus i runden. ÷2 halverer dine egne point i runden. Giv ÷2 gives til en anden aktiv spiller og halverer deres.</div>`;
   h += `<div class="hint">Ekstra træk: to kort mere med det samme. Bust på det første stopper det andet. Giv væk: giv et af dine tal til en anden (dublet = bust). Pause: springes over én gang, bliver i runden.</div>`;
+  h += `<div class="lbl">Risikomåler</div><div class="seg deck" id="riskSeg">${[[0,'Fra'],[1,'Til']].map(([k, n]) => `<button type="button" data-risk="${k}" class="${!!v.risk === !!k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostRisk(${k})">${n}</button>`).join('')}</div><div class="hint" id="riskHint">Viser hvor stor risikoen er for bust ved næste kort – i feltet hos den, der har tur. Alle ser den.</div>`;
   const aiN = v.players.filter(p => p.ai).length;
   const maxAi = Math.min(7, 8 - v.players.filter(p => !p.ai).length);
   if (host) h += `<div class="lbl">Modstandere (AI)</div><div class="seg deck ai" id="aiSeg">${[0,1,2,3,4,5,6,7].map(n => `<button type="button" data-ai="${n}" class="${aiN === n ? 'on' : ''}" ${n > maxAi ? 'disabled' : ''} onclick="hostAi(${n})">${n}</button>`).join('')}</div><div class="hint" id="aiHint">${aiN ? 'Computeren spiller med på denne telefon. Ingen andre skal joine.' : '0 = almindeligt spil, hvor andre telefoner joiner.'}</div>`;
@@ -1296,12 +1427,12 @@ function renderGame() {
     } else if (WP && i === wMark) {
       pc = ' marked'; extra += '<span class="mkchip">Markeret</span>';
     }
-    return `<div class="pr${i === actor ? ' turn' : ''}${st === 'bust' ? ' is-bust' : ''}${p.status === 'stopped' && !p.seven && i !== actor ? ' is-stopped' : ''}${pc}" data-p="${i}"${click}>${extra}${st === 'bust' ? '<span class="bustx">✕</span>' : ''}<span class="nm"><b>${esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name)}</b>${p.ai ? '<span class="ain"> (AI)</span>' : ''}${p.id === myId ? '<span class="dig">Dig</span>' : ''}</span><span class="pts">${G.roundScore(p)}<small>${p.total} i alt</small></span><span class="meta">${statusChip(p)}${p.skip ? '<span class="giver">over 1×</span>' : ''}${i === v.dealer ? '<span class="giver">giver</span>' : ''}${p.online ? '' : '<span class="offsmall">offline</span>'}</span><div class="sm">${hand}</div></div>`;
+    return `<div class="pr${i === actor ? ' turn' : ''}${st === 'bust' ? ' is-bust' : ''}${p.status === 'stopped' && !p.seven && i !== actor ? ' is-stopped' : ''}${pc}" data-p="${i}"${click}>${extra}${st === 'bust' ? '<span class="bustx">✕</span>' : ''}<span class="nm"><b>${esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name)}</b>${p.ai ? '<span class="ain"> (AI)</span>' : ''}${p.id === myId ? '<span class="dig">Dig</span>' : ''}</span><span class="pts">${G.roundScore(p)}<small>${p.total} i alt</small></span><span class="meta">${riskChip(v, i) && v.players.length >= 5 ? '' : statusChip(p)}${riskChip(v, i)}${p.skip ? '<span class="giver">over 1×</span>' : ''}${i === v.dealer ? '<span class="giver">giver</span>' : ''}${p.online ? '' : '<span class="offsmall">offline</span>'}</span><div class="sm">${hand}</div></div>`;
   }).join('') + '</div>';
   const keepFx = [...document.querySelectorAll('#grid .pr > .tfx')].map(el => [el.parentNode.dataset.p, el]);
   $('app').innerHTML = h;
   // brik-effekter overlever en ny tegning (fortsætter hvor de var)
-  applyDupFx();
+  applyDupFx(); paintSay();
   keepFx.forEach(([pi, el]) => { const r = fxRow(pi); if (r) { el.style.setProperty('--el', -(Date.now() - (+el.dataset.t0 || Date.now())) + 'ms'); r.appendChild(el); } });
   // knapper
   const canAct = v.phase === 'play' && !v.pending && !v.hold && v.stage === 'turns' && v.turn === meIdx && !sending;
@@ -1346,11 +1477,18 @@ function renderGame() {
       else if (!ai && mine && !uid) sub = '<div class="career">Karriere hentes…</div>';
       else if (!ai && st && st.missing) sub = '<div class="career">Ingen gemte tal endnu.</div>';
       else if (!ai && uid) sub = '<div class="career">Karriere hentes…</div>';
-      return `<div class="rankrow"><span class="place">${r.place}.</span><div class="grow"><b>${esc(label)}</b>${ai ? ' <span class="ain">(AI)</span>' : ''}${sub}</div><span class="pts">${p.total}</span></div>`;
+      const bl = ai ? [] : mine ? G.mergeBadges(st && st.badges, localBadges()) : (st && st.badges) || [];
+      return `<div class="rankrow"><span class="place">${r.place}.</span><div class="grow"><b>${esc(label)}</b>${ai ? ' <span class="ain">(AI)</span>' : ''}<span class="bdgs">${badgeIcons(bl)}</span>${sub}</div><span class="pts">${p.total}</span></div>`;
     }).join('') + '</div>';
-    if (role === 'host') s += `<button class="primary" id="btnNew" onclick="hostNewGame()">Nyt spil</button>`;
-    else s += `<p class="hint" style="text-align:center">Venter på at ${esc(v.players[0].name)} starter et nyt spil…</p>`;
+    // revanche: samme rum, spillere, AI og regler
+    const rs = v.rematch || {}, humans = v.players.filter(p => !p.ai && p.online !== false), nReady = humans.filter(p => rs[p.id]).length, meReady = !!rs[myId];
+    s += `<div class="rematch" id="rematchBox"><button class="primary${meReady ? ' ready' : ''}" id="btnRematch" onclick="voteRematch()">${meReady ? 'Klar til revanche ✓' : 'Revanche'}</button>
+      <div class="rmlist" id="rmList">${humans.map(p => `<span class="rm${rs[p.id] ? ' on' : ''}">${rs[p.id] ? '✓' : '…'} ${esc(p.name)}</span>`).join('')}</div>
+      <div class="hint" id="rmHint">${nReady}/${humans.length} klar. Starter, når alle er klar${role === 'host' ? ' – eller når du starter nu' : ''}. Samme regler og modstandere.</div>
+      ${role === 'host' ? `<div class="rmrow"><button class="ghost" id="btnRematchNow" onclick="hostRematchNow()">Start revanche nu</button><button class="ghost" id="btnNew" onclick="hostNewGame()">Til lobbyen</button></div>` : ''}</div>`;
+    s += recapHtml(v, meIdx);
     sh.innerHTML = s; m.classList.add('show');
+    noteBadges(v, meIdx);
   } else if (v.phase === 'roundEnd') {
     const order = v.players.map((p, i) => i).sort((a, b) => v.players[b].total - v.players[a].total);
     let s = `<h2>Runde ${v.round} er slut</h2>`;
@@ -1360,6 +1498,84 @@ function renderGame() {
     else s += `<p class="hint" style="text-align:center">Venter på at ${esc(v.players[0].name)} ${v.phase === 'over' ? 'starter et nyt spil' : 'starter næste runde'}…</p>`;
     sh.innerHTML = s; m.classList.add('show');
   } else m.classList.remove('show');
+}
+
+// ---------- opsummering af spillet ----------
+function recapHtml(v, meIdx) {
+  const rc = G.recap(v), nm = i => esc(String(v.players[i].name).replace(/ \(AI\)$/, ''));
+  let h = '<div class="recap" id="recap"><div class="lbl" style="margin-top:0">Spillets højdepunkter</div>';
+  h += rc.hl.length ? '<div class="hls">' + rc.hl.map(x => `<div class="hl" data-k="${x.k}"><span class="hico">${x.ico}</span><div><b>${esc(x.title)}</b><div>${esc(x.txt)}</div></div></div>`).join('') + '</div>' : '<div class="hint">Et roligt spil – ingen store dramaer.</div>';
+  const mine = myBadgesNew || [];
+  if (mine.length) h += `<div class="newbadges" id="newBadges">Nye badges: ${mine.map(k => `<span class="bdg" title="${esc(G.BADGES[k].desc)}" onclick="badgeInfo('${k}')">${G.BADGES[k].ico} ${esc(G.BADGES[k].name)}</span>`).join(' ')}</div>`;
+  // runde for runde
+  const R = rc.rounds;
+  h += `<div class="lbl">Runde for runde</div><div class="rtab-wrap"><table class="rtab" id="roundTab"><tr><th></th>${R.map((r, k) => `<th>${k + 1}</th>`).join('')}<th>Ialt</th></tr>` +
+    v.players.map((p, i) => `<tr${i === meIdx ? ' class="me"' : ''}><td class="rn">${nm(i)}</td>${R.map(r => { const x = r[i] | 0; return `<td class="${x < 0 ? 'neg' : x === 0 ? 'zero' : ''}">${x}</td>`; }).join('')}<td class="tot">${p.total}</td></tr>`).join('') + '</table></div>';
+  h += `<button class="ghost" id="btnShare" style="width:100%;margin-top:10px" onclick="shareRecap()">Del opsummering</button></div>`;
+  return h;
+}
+// PNG via canvas (samme indhold som opsummeringen)
+function recapCanvas(v) {
+  const rc = G.recap(v), W = 1080, Hh = Math.max(1080, 360 + rc.hl.length * 128 + 60 + Math.min(8, v.players.length) * 52 + 150), c = document.createElement('canvas'); c.width = W; c.height = Hh;
+  const x = c.getContext('2d'), nm = i => String(v.players[i].name).replace(/ \(AI\)$/, '');
+  const g = x.createLinearGradient(0, 0, 0, Hh); g.addColorStop(0, '#1b2a4a'); g.addColorStop(1, '#0d1628'); x.fillStyle = g; x.fillRect(0, 0, W, Hh);
+  x.textBaseline = 'top'; x.fillStyle = '#fff'; x.font = '900 76px system-ui, sans-serif'; x.fillText('FLIP', 60, 50); const fw = x.measureText('FLIP').width; x.fillStyle = '#ffcf40'; x.fillText('X', 60 + fw, 50);
+  x.fillStyle = '#9fb0d0'; x.font = '700 32px system-ui, sans-serif'; x.fillText('Spillets højdepunkter · ' + new Date().toLocaleDateString('da-DK'), 60, 140);
+  const w = v.players[(v.winners || [])[0]] || v.players[0];
+  const wg = x.createLinearGradient(60, 200, W - 60, 320); wg.addColorStop(0, '#ffcf40'); wg.addColorStop(1, '#ff8a3d'); x.fillStyle = wg;
+  rr(x, 60, 200, W - 120, 120, 24); x.fill(); x.fillStyle = '#10192e'; x.font = '900 52px system-ui, sans-serif'; fitText(x, '🏆 ' + nm(v.players.indexOf(w)) + ' vinder med ' + w.total, 90, 232, W - 180);
+  let y = 360;
+  rc.hl.forEach(h => { x.fillStyle = '#24365c'; rr(x, 60, y, W - 120, 110, 20); x.fill(); x.font = '48px system-ui, sans-serif'; x.fillStyle = '#fff'; x.fillText(h.ico, 90, y + 28); x.font = '900 34px system-ui, sans-serif'; x.fillText(h.title, 170, y + 18); x.font = '600 30px system-ui, sans-serif'; x.fillStyle = '#c9d6ef'; fitText(x, h.txt, 170, y + 62, W - 260); y += 128; });
+  y += 10; x.fillStyle = '#9fb0d0'; x.font = '800 30px system-ui, sans-serif'; x.fillText('Stilling', 60, y); y += 50;
+  G.gameRanking(v.players).slice(0, 8).forEach(r => { x.fillStyle = '#ffcf40'; x.font = '900 34px system-ui, sans-serif'; x.fillText(r.place + '.', 60, y); x.fillStyle = '#fff'; fitText(x, nm(r.i), 120, y, 640); x.textAlign = 'right'; x.fillText(String(r.total), W - 60, y); x.textAlign = 'left'; y += 52; });
+  x.fillStyle = '#6f82a8'; x.font = '600 26px system-ui, sans-serif'; x.fillText((v.round || 0) + ' runder · spillet til ' + v.target + ' point', 60, Hh - 70);
+  return c;
+}
+function rr(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
+function fitText(x, t, a, b, max) { let s = String(t); while (s.length > 3 && x.measureText(s).width > max) s = s.slice(0, -2); if (s !== String(t)) s = s.slice(0, -1) + '…'; x.fillText(s, a, b); }
+function recapPng() { return view && view.phase === 'over' ? recapCanvas(view).toDataURL('image/png') : null; }
+function shareRecap() {
+  if (!view || view.phase !== 'over') return;
+  recapCanvas(view).toBlob(async blob => {
+    if (!blob) return toast('Kunne ikke lave billedet');
+    const file = new File([blob], 'flipx-opsummering.png', { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'FlipX', text: 'Højdepunkter fra vores FlipX-spil' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'flipx-opsummering.png'; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Billedet er hentet');
+  }, 'image/png');
+}
+// ---------- badges ----------
+// Optjenes ved spillets slut. Gemmes lokalt med det samme og i Firestore players/{uid}.badges, når reglerne tillader det.
+let myBadgesNew = null, badgesKey = '';
+function localBadges() { return G.mergeBadges(LS.get('badges', []), []); }
+function badgeIcons(list) { return (list || []).filter(k => G.BADGES[k]).map(k => `<span class="bdg-i" role="button" title="${esc(G.BADGES[k].name)}" onclick="event.stopPropagation();badgeInfo('${k}')">${G.BADGES[k].ico}</span>`).join(''); }
+function badgeInfo(k) { const b = G.BADGES[k]; if (b) toast(b.ico + ' ' + b.name + ' – ' + b.desc, 'action', 3000); }
+function noteBadges(v, meIdx) {
+  if (meIdx < 0 || v.players[meIdx].ai || !v.matchId) return;
+  const key = room + ':' + v.matchId, car = validUid(window.flipUid) ? career[window.flipUid] : null;
+  const got = G.earnedBadges(v, meIdx, car && !car.missing ? car : null);
+  const had = LS.get('badgesBy', {}) || {}, before = localBadges();
+  const fresh = got.filter(k => before.indexOf(k) < 0);
+  const all = G.mergeBadges(before, got);
+  if (fresh.length || badgesKey !== key) {
+    if (badgesKey !== key) myBadgesNew = [];
+    myBadgesNew = G.mergeBadges(myBadgesNew || [], fresh);
+    badgesKey = key;
+    if (fresh.length) { LS.set('badges', all); LS.set('badgesSync', false); setTimeout(render, 0); }
+  }
+  syncBadges();
+}
+let badgeBusy = false;
+function syncBadges() {
+  if (badgeBusy || LS.get('badgesSync', true) || !window.FlipLive || !window.FlipLive.saveBadges || !validUid(window.flipUid)) return;
+  if (LS.get('recorded', '') === '' ) return; // rækken skal findes først (oprettes når et spil gemmes)
+  badgeBusy = true;
+  window.FlipLive.saveBadges(window.flipUid, localBadges()).then(list => {
+    badgeBusy = false; LS.set('badgesSync', true); window.flipBadgesSaved = true;
+    if (career[window.flipUid]) career[window.flipUid].badges = list;
+  }).catch(e => { badgeBusy = false; window.flipBadgesSaved = false; console.warn('badges ikke gemt (gemmes lokalt):', e && (e.code || e.message)); });
 }
 
 // ---------- rangliste ----------
@@ -1379,8 +1595,8 @@ function boardHtml() {
   if (boardError) body = '<div class="hint">Rangliste kan ikke hentes lige nu. Spillet virker alligevel.</div>';
   else if (!rows) body = '<div class="hint">Henter rangliste…</div>';
   else if (!rows.length) body = '<div class="hint">Ingen spil endnu. Listen fyldes, når nogen har vundet et spil.</div>';
-  else body = rows.map((r, i) => `<div class="pl boardrow"><span class="place">${i + 1}</span><span class="grow"><b>${esc(r.name || 'Spiller')}</b>${r.id === window.flipUid ? ' <span class="dig">Dig</span>' : ''}<div class="career">${r.wins} sejre · ${r.games} spil · ${G.formatPercent(G.winPercent(r.wins, r.games))}</div></span></div>`).join('');
-  return `<div class="card" id="boardCard"><div class="lbl" style="margin-top:0">Rangliste</div><div id="boardList">${body}</div><div class="hint">Sidst kendte navn, sejre, spil og sejrprocent. AI tæller ikke med.</div></div>`;
+  else body = rows.map((r, i) => `<div class="pl boardrow"><span class="place">${i + 1}</span><span class="grow"><b>${esc(r.name || 'Spiller')}</b>${r.id === window.flipUid ? ' <span class="dig">Dig</span>' : ''}<span class="bdgs">${badgeIcons(r.id === window.flipUid ? G.mergeBadges(r.badges, localBadges()) : r.badges)}</span><div class="career">${r.wins} sejre · ${r.games} spil · ${G.formatPercent(G.winPercent(r.wins, r.games))}</div></span></div>`).join('');
+  return `<div class="card" id="boardCard"><div class="lbl" style="margin-top:0">Rangliste</div><div id="boardList">${body}</div><div class="hint">Sidst kendte navn, sejre, spil og sejrprocent. AI tæller ikke med. Tryk på et badge for at se, hvad det betyder.</div></div>`;
 }
 function loadHomeBoard() {
   if (!window.FlipLive) return;
@@ -1398,7 +1614,7 @@ function attachUid() {
   } else if (role === 'client' && hostConn && hostConn.open) send(hostConn, { t: 'uid', uid: uid });
 }
 window.onFlipUid = function (uid) {
-  window.flipUid = uid;
+  window.flipUid = uid; setTimeout(syncBadges, 1500);
   LS.set('uid', uid);
   attachUid();
   if (!role || rejected) loadHomeBoard();
@@ -1446,7 +1662,8 @@ function kickRecord() {
   const won = (view.winners || []).some(i => view.players[i] && view.players[i].id === myId);
   window.FlipLive.record(window.flipUid, me.name, won).then(next => {
     LS.set('recorded', key);
-    career[window.flipUid] = next;
+    career[window.flipUid] = Object.assign({}, career[window.flipUid] || {}, next, { missing: false });
+    setTimeout(syncBadges, 0);
     if (view && view.phase === 'over') render();
   }).catch(e => { recordBusy = ''; window.flipSaveFail = true; if (view && view.phase === 'over') render(); console.warn('kunne ikke gemme karriere', e && e.message ? e.message : e); });
 }

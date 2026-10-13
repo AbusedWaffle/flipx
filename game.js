@@ -14,6 +14,7 @@
     if (S.minusChance !== 'low' && S.minusChance !== 'high') S.minusChance = 'std';
     if (!S.specials) S.specials = defaultSpecials();
     SPEC_KEYS.forEach(function (k) { if (typeof S.specials[k] !== 'boolean') S.specials[k] = !!defaultSpecials()[k]; });
+    S.risk = !!S.risk;
   }
   // Standard: 1 af hver modifikator, 3 af hvert tændt specialkort.
   // Lille ≈ halvdelen (mindst 1). Høj = dobbelt. Talkort er uændrede.
@@ -95,7 +96,7 @@
   function activeIdx(S) { var r = []; for (var i = 0; i < S.players.length; i++) if (isActive(S, i)) r.push(i); return r; }
 
   function createLobby(target) {
-    return { v: 1, phase: 'lobby', target: target || 200, deckMax: 12, chance: 'std', specials: defaultSpecials(), minus: 'off', minusChance: 'std', players: [], log: [], seq: 0, events: [], evSeq: 0 };
+    return { v: 1, phase: 'lobby', target: target || 200, deckMax: 12, chance: 'std', specials: defaultSpecials(), risk: false, minus: 'off', minusChance: 'std', players: [], log: [], seq: 0, events: [], evSeq: 0 };
   }
   function addPlayer(S, id, name) {
     var p = { id: id, name: name, online: true, total: 0 };
@@ -106,7 +107,8 @@
   }
   function startGame(S, rng) {
     if (S.players.length < 2) return { ok: false, err: 'Mindst 2 spillere' };
-    S.phase = 'play'; S.round = 0; S.dealer = -1; S.history = []; S.winners = []; S.tie = false;
+    S.phase = 'play'; S.round = 0; S.dealer = -1; S.history = []; S.winners = []; S.tie = false; S.rematch = {};
+    S.stats = S.players.map(function () { return newStats(); });
     normalizeRules(S);
     S.deck = shuffle(buildDeck(S.deckMax, S.specials, S.chance, S.minus, S.minusChance), rng); S.discard = [];
     S.players.forEach(function (p) { p.total = 0; resetPlayerRound(p); });
@@ -136,11 +138,39 @@
     }
     return S.deck.pop();
   }
+  // ---------- statistik til spil-opsummering og badges ----------
+  function newStats() { return { bust: 0, brave: 0, frozen: 0, given: 0, seven: 0, frzLead: [] }; }
+  function st(S, i) {
+    if (!S.stats) S.stats = [];
+    while (S.stats.length < S.players.length) S.stats.push(newStats());
+    return S.stats[i];
+  }
+  // Risiko for bust ved næste kort: andelen af den resterende bunke (eller kastebunken, hvis bunken er tom og blandes),
+  // der er et tal spilleren allerede har. Kort lagt til side under Træk 3 er ikke i bunken.
+  function bustRisk(S, i) {
+    var p = S.players[i]; if (!p || !p.nums || p.status !== 'active') return null;
+    var pool = (S.deck && S.deck.length) ? S.deck : (S.discard || []);
+    if (!pool.length) return null;
+    var n = 0;
+    for (var k = 0; k < pool.length; k++) if (isNum(pool[k]) && p.nums.indexOf(numVal(pool[k])) >= 0) n++;
+    return n / pool.length;
+  }
+  function isLeader(S, t) {
+    var mx = -Infinity, k;
+    for (k = 0; k < S.players.length; k++) if (k !== t && S.players[k].total > mx) mx = S.players[k].total;
+    return S.players[t].total > mx;
+  }
   // Giv et kort til spiller i. frame = aktiv Træk 3 (eller null).
   function give(S, i, card, frame, verb) {
     var p = S.players[i], f3 = frame ? 1 : undefined, deal = verb === 'fik' ? 1 : undefined;
     if (isNum(card)) {
-      var v = numVal(card);
+      var v = numVal(card), risk;
+      if (verb === 'trak' && !frame && S.deck) { // risikoen lige før trækket (kortet er allerede taget fra bunken)
+        var dn = (p.nums.indexOf(v) >= 0) ? 1 : 0;
+        for (var rk = 0; rk < S.deck.length; rk++) if (isNum(S.deck[rk]) && p.nums.indexOf(numVal(S.deck[rk])) >= 0) dn++;
+        risk = dn / (S.deck.length + 1);
+      }
+      if (risk !== undefined && !(p.nums.indexOf(v) >= 0 && !p.sc)) { var so = st(S, i); if (risk > so.brave) so.brave = risk; }
       if (p.nums.indexOf(v) >= 0) {
         if (p.sc) {
           p.sc = false; p.acts.splice(p.acts.indexOf('sc'), 1);
@@ -151,12 +181,13 @@
           p.status = 'bust'; p.bustCard = v;
           log(S, nm(S, i) + ' ' + verb + ' ' + v + ' igen og gik bust!', 'bust');
           ev(S, 'bust', { p: i, card: card, f3: f3, lost: roundScoreRaw(p) });
+          var sb = st(S, i); if (roundScoreRaw(p) > sb.bust) sb.bust = roundScoreRaw(p);
         }
       } else {
         p.nums.push(v);
         log(S, nm(S, i) + ' ' + verb + ' ' + v, '');
-        ev(S, 'card', { p: i, card: card, f3: f3, deal: deal });
-        if (p.nums.length >= 7) { p.seven = true; S.sevenEnd = true; log(S, nm(S, i) + ' fik 7 forskellige! +15', 'seven'); ev(S, 'seven', { p: i, pts: roundScore(p) }); }
+        ev(S, 'card', risk !== undefined ? { p: i, card: card, f3: f3, deal: deal, risk: Math.round(risk * 100) } : { p: i, card: card, f3: f3, deal: deal });
+        if (p.nums.length >= 7) { p.seven = true; S.sevenEnd = true; st(S, i).seven++; log(S, nm(S, i) + ' fik 7 forskellige! +15', 'seven'); ev(S, 'seven', { p: i, pts: roundScore(p) }); }
       }
       return;
     }
@@ -213,7 +244,7 @@
   function resolveGive(S, from, target, v) {
     var g = S.players[from], r = S.players[target], k = g.nums.indexOf(v);
     if (k < 0) return;
-    g.nums.splice(k, 1); g.acts.push('gv');
+    g.nums.splice(k, 1); g.acts.push('gv'); st(S, from).given++;
     var card = 'n' + v;
     if (r.nums.indexOf(v) >= 0) {
       if (r.sc) {
@@ -227,17 +258,21 @@
         log(S, nm(S, from) + ' gav ' + v + ' til ' + r.name + ', som gik bust!', 'bust');
         ev(S, 'give', { p: from, t: target, card: card, bust: 1 });
         ev(S, 'bust', { p: target, card: card, lost: roundScoreRaw(r) });
+        var sg = st(S, target); if (roundScoreRaw(r) > sg.bust) sg.bust = roundScoreRaw(r);
       }
     } else {
       r.nums.push(v);
       log(S, nm(S, from) + ' gav ' + v + ' til ' + r.name, 'action');
       ev(S, 'give', { p: from, t: target, card: card });
-      if (r.nums.length >= 7) { r.seven = true; S.sevenEnd = true; log(S, r.name + ' fik 7 forskellige! +15', 'seven'); ev(S, 'seven', { p: target, pts: roundScore(r) }); }
+      if (r.nums.length >= 7) { r.seven = true; S.sevenEnd = true; st(S, target).seven++; log(S, r.name + ' fik 7 forskellige! +15', 'seven'); ev(S, 'seven', { p: target, pts: roundScore(r) }); }
     }
   }
   function resolveAssign(S, card, from, target) {
     var tp = S.players[target], self = from === target;
+    if (!self) st(S, from).given++;
     if (card === 'fr') {
+      st(S, target).frozen++;
+      if (!self && isLeader(S, target)) st(S, from).frzLead.push(S.round);
       tp.status = 'frozen'; tp.acts.push('fr');
       log(S, self ? nm(S, from) + ' frøs sig selv (' + roundScore(tp) + ' point)' : nm(S, from) + ' frøs ' + tp.name + ' (' + roundScore(tp) + ' point)', 'action');
       ev(S, 'freeze', { p: from, t: target, pts: roundScore(tp) });
@@ -395,6 +430,71 @@
     ['deck', 'discard', 'queue', 'pending', 'hold', 'endOk', 'history', 'winners', 'turn', 'stage', 'round', 'dealer'].forEach(function (k) { delete S[k]; });
     log(S, 'Nyt spil – venter i lobbyen', 'info');
   }
+  // Revanche: samme rum, spillere, AI og regler – nyt spil med det samme
+  function rematch(S, rng) {
+    if (S.phase !== 'over') return { ok: false, err: 'Spillet er ikke slut' };
+    backToLobby(S);
+    var r = startGame(S, rng);
+    if (r.ok) log(S, 'Revanche!', 'info');
+    return r;
+  }
+  function rematchState(S) {
+    var humans = S.players.filter(function (p) { return !p.ai && p.online !== false; }), ready = S.rematch || {};
+    var n = humans.filter(function (p) { return ready[p.id]; }).length;
+    return { ready: n, need: humans.length, all: humans.length > 0 && n === humans.length };
+  }
+  // Opsummering af et afsluttet spil (ren funktion – bruges af alle skærme ens)
+  function recap(v) {
+    var P = v.players || [], H = v.history || [], S2 = v.stats || [], out = [], i, r;
+    var name = function (k) { return String((P[k] || {}).name || '').replace(/ \(AI\)$/, ''); };
+    var tot = P.map(function () { return 0; }), low = P.map(function () { return 0; }), deficit = P.map(function () { return 0; });
+    for (r = 0; r < H.length; r++) {
+      for (i = 0; i < P.length; i++) { tot[i] += H[r][i] | 0; if (tot[i] < low[i]) low[i] = tot[i]; }
+      var mx = Math.max.apply(null, tot);
+      for (i = 0; i < P.length; i++) if (mx - tot[i] > deficit[i]) deficit[i] = mx - tot[i];
+    }
+    var best = function (f) { var b = -1, bv = 0; for (var k = 0; k < P.length; k++) { var x = f(S2[k] || newStats(), k); if (x > bv) { bv = x; b = k; } } return b < 0 ? null : { p: b, v: bv }; };
+    var w = (v.winners || [])[0];
+    var b;
+    if ((b = best(function (s) { return s.bust; }))) out.push({ k: 'bust', ico: '💥', title: 'Største bust', p: b.p, txt: name(b.p) + ' mistede ' + b.v + ' point' });
+    if ((b = best(function (s) { return s.brave; }))) out.push({ k: 'brave', ico: '🎲', title: 'Modigste træk', p: b.p, txt: name(b.p) + ' overlevede ' + Math.round(b.v * 100) + ' % risiko' });
+    if (w !== undefined && deficit[w] >= 10) out.push({ k: 'comeback', ico: '🚀', title: 'Comeback', p: w, txt: name(w) + ' var ' + deficit[w] + ' point efter og vandt' });
+    if ((b = best(function (s) { return s.frozen; }))) out.push({ k: 'frozen', ico: '❄', title: 'Mest frosset', p: b.p, txt: name(b.p) + ' blev frosset ' + b.v + '×' });
+    if ((b = best(function (s) { return s.given; }))) out.push({ k: 'given', ico: '🎁', title: 'Mest gavmild', p: b.p, txt: name(b.p) + ' gav ' + b.v + ' kort væk' });
+    if ((b = best(function (s) { return s.seven; }))) out.push({ k: 'seven', ico: '7', title: 'Syv forskellige', p: b.p, txt: name(b.p) + ' fik 7 forskellige' + (b.v > 1 ? ' ' + b.v + '×' : '') });
+    return { hl: out.slice(0, 5), rounds: H, low: low, deficit: deficit };
+  }
+  // Badges optjent i dette spil for spiller i. car = karriere efter spillet ({games, wins}) eller null.
+  var BADGES = {
+    first: { ico: '🏆', name: 'Første sejr', desc: 'Vandt sit første spil' },
+    g10: { ico: '🔟', name: '10 spil', desc: 'Har spillet 10 spil' },
+    seven: { ico: '7️⃣', name: '7-unik', desc: 'Fik 7 forskellige talkort i én runde' },
+    risk70: { ico: '🎲', name: 'Overlevede 70 % risiko', desc: 'Trak og overlevede med mindst 70 % risiko for bust' },
+    frzlead: { ico: '❄', name: 'Frøs føreren', desc: 'Frøs føreren i spillets sidste runde' },
+    comeback: { ico: '🚀', name: 'Comeback fra minus', desc: 'Var i minus undervejs og vandt alligevel' }
+  };
+  function earnedBadges(v, i, car) {
+    var s = (v.stats || [])[i] || newStats(), out = [], won = (v.winners || []).indexOf(i) >= 0, rc = recap(v);
+    if (s.seven > 0) out.push('seven');
+    if (s.brave >= 0.7) out.push('risk70');
+    if ((s.frzLead || []).indexOf(v.round) >= 0) out.push('frzlead');
+    if (won && rc.low[i] < 0) out.push('comeback');
+    if (car && car.wins >= 1) out.push('first');
+    if (car && car.games >= 10) out.push('g10');
+    return out;
+  }
+  function mergeBadges(old, add) {
+    var r = Array.isArray(old) ? old.filter(function (k) { return typeof k === 'string' && BADGES[k]; }) : [];
+    (add || []).forEach(function (k) { if (BADGES[k] && r.indexOf(k) < 0) r.push(k); });
+    return r.slice(0, 20);
+  }
+  // AI-personligheder: forsigtig / normal / vild – fast pr. navn
+  var STYLES = ['careful', 'normal', 'wild'];
+  function aiStyle(name) {
+    var h = 0, s = aiBase(name);
+    for (var k = 0; k < s.length; k++) h = (h * 31 + s.charCodeAt(k)) >>> 0;
+    return STYLES[h % 3];
+  }
   function countCards(S) {
     var n = (S.deck || []).length + (S.discard || []).length;
     S.players.forEach(function (p) { if (p.nums) n += tableCards(p).length; });
@@ -405,6 +505,7 @@
   // Offentlig visning til klienter: skjul bunkens rækkefølge
   function publicView(S) {
     var v = JSON.parse(JSON.stringify(S));
+    if (S.risk && S.phase === 'play') v.risk = S.players.map(function (p, i) { var r = bustRisk(S, i); return r === null ? null : Math.round(r * 100); });
     v.deckCount = (S.deck || []).length; v.discardCount = (S.discard || []).length;
     delete v.deck; delete v.discard;
     return v;
@@ -429,7 +530,7 @@
   function renameAi(S, rng) {
     var ais = S.players.filter(function (p) { return p.ai; });
     var fresh = pickAiNames(S.players.filter(function (p) { return !p.ai; }).map(function (p) { return p.name; }), ais.length, rng);
-    ais.forEach(function (p, k) { if (fresh[k]) p.name = fresh[k] + ' (AI)'; });
+    ais.forEach(function (p, k) { if (fresh[k]) p.name = fresh[k] + ' (AI)'; p.style = aiStyle(p.name); });
   }
   // Den med flest point i alt, og ved lige højst i runden. Andre foretrækkes frem for en selv.
   function aiLeader(S, options, from) {
@@ -459,6 +560,18 @@
     if (!canStop(p)) return { pid: p.id, a: 'draw' };
     sc = roundScore(p); hi = 0;
     for (k = 0; k < p.nums.length; k++) if (p.nums[k] > hi) hi = p.nums[k];
+    var style = p.style || 'normal', risk = bustRisk(S, i);
+    if (risk === null) risk = 0;
+    if (p.sc) risk = risk / 3; // 2. chance redder én gang
+    if (style === 'careful') {
+      if (sc >= 18 || risk >= 0.3) return { pid: p.id, a: 'stop' };
+      if (sc >= 12 && p.nums.length >= 4) return { pid: p.id, a: 'stop' };
+      return { pid: p.id, a: 'draw' };
+    }
+    if (style === 'wild') {
+      if (sc >= 30 || (risk >= 0.55 && sc >= 10)) return { pid: p.id, a: 'stop' };
+      return { pid: p.id, a: 'draw' };
+    }
     if (sc >= 22) return { pid: p.id, a: 'stop' };
     if (sc >= 16 && hi >= 9) return { pid: p.id, a: 'stop' };
     if (sc >= 12 && p.nums.length >= 5) return { pid: p.id, a: 'stop' };
@@ -530,7 +643,8 @@
   var api = { buildDeck: buildDeck, shuffle: shuffle, label: label, roundScore: roundScore, tableCards: tableCards, createLobby: createLobby,
     addPlayer: addPlayer, startGame: startGame, startRound: startRound, nextRound: nextRound, act: act, process: process, endRound: endRound, resume: resume,
     canStop: canStop, activeIdx: activeIdx, backToLobby: backToLobby, countCards: countCards, publicView: publicView, drawCard: drawCard,
-    normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, sortBoard: sortBoard };
+    normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, sortBoard: sortBoard,
+    bustRisk: bustRisk, rematch: rematch, rematchState: rematchState, recap: recap, BADGES: BADGES, earnedBadges: earnedBadges, mergeBadges: mergeBadges, aiStyle: aiStyle, STYLES: STYLES };
   api.eventsSince = function (S, id) { return (S.events || []).filter(function (e) { return e.id > id; }); };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.EnTil = api;
 })(this);
