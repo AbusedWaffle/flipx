@@ -315,7 +315,7 @@
         card = drawCard(S, rng);
         if (card === null) { log(S, 'Ikke flere kort!', 'info'); S.queue = []; return endRound(S); }
         give(S, task.i, card, null, task.t === 'deal' ? 'fik' : 'trak');
-        if (S.pace && notable(S, before, task)) { S.hold = { k: 'step', from: before }; return; }
+        if (S.pace && notable(S, before, task)) { S.hold = { k: 'step', from: before }; if (task && (task.t === 'take3' || task.x)) S.hold.x = 1; return; }
       } else if (task.t === 'assign') {
         S.queue.shift();
         var c = candidates(S, task.card, task.from);
@@ -334,7 +334,7 @@
         card = drawCard(S, rng);
         if (card === null) { log(S, 'Ikke flere kort!', 'info'); S.queue = []; return endRound(S); }
         give(S, task.target, card, task, 'trak');
-        if (S.pace) { S.hold = { k: 'step', from: before }; return; }
+        if (S.pace) { S.hold = { k: 'step', from: before, x: 1 }; return; }
       } else S.queue.shift();
     }
   }

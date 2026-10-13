@@ -216,8 +216,8 @@ td.n{text-align:right;font-weight:800}
 .pr{position:relative}
 .fx-shake{animation:shake .5s,flashr 1s}
 @keyframes flashr{0%{box-shadow:inset 0 0 0 60px #e0485fdd,0 0 0 0 #e0485f}100%{box-shadow:inset 0 0 0 0 #e0485f00,0 0 0 14px #e0485f00}}
-.fx-ice{animation:ice 1.2s}
-.fx-land{animation:goldr .8s}
+.fx-ice{animation:ice .9s}
+.fx-land{animation:goldr .5s}
 @keyframes ice{0%{box-shadow:inset 0 0 0 40px #e6f7ffcc}100%{box-shadow:inset 0 0 0 0 #e6f7ff00}}
 .fx-glow{animation:glowr 1.2s}
 @keyframes glowr{0%{box-shadow:0 0 0 0 #ff6b86}40%{box-shadow:0 0 16px 4px #ff6b86}100%{box-shadow:0 0 0 0 #ff6b8600}}
@@ -287,12 +287,12 @@ body.anim-reduced .c.dupnew{animation:none!important}
 /* ---------- animationer i brikken (ens på alle skærme) ---------- */
 .tfx{position:absolute;inset:0;z-index:6;border-radius:12px;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:visible;text-align:center;animation:tfxlife var(--d,1.7s) var(--el,0ms) both}
 @keyframes tfxlife{0%{opacity:0}8%{opacity:1}82%{opacity:1}100%{opacity:0}}
-.tfx::before{content:'';position:absolute;inset:0;border-radius:12px;background:var(--bg,#10192ecc);animation:tfxbg .5s var(--el,0ms) ease-out both}
+.tfx::before{content:'';position:absolute;inset:0;border-radius:12px;background:var(--bg,#10192ecc);animation:tfxbg .35s var(--el,0ms) ease-out both}
 @keyframes tfxbg{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:none}}
 .tfx>*{position:relative}
-.tfx-ico{font-size:calc(var(--s)*1.25);line-height:1;font-weight:900;color:#fff;text-shadow:0 2px 0 #0006,0 0 18px #fff8;animation:icein .6s var(--el,0ms) cubic-bezier(.2,1.3,.4,1) both}
-.tfx-ttl{font-size:var(--s);line-height:1.05;font-weight:900;color:#fff;letter-spacing:.5px;text-shadow:0 3px 0 #0007;white-space:nowrap;animation:tslam .5s calc(var(--el,0ms) + .12s) cubic-bezier(.2,1.4,.4,1) both}
-.tfx-sub{font-size:max(11px,calc(var(--s)*.4));font-weight:800;color:#fff;opacity:.92;white-space:nowrap;animation:up .4s calc(var(--el,0ms) + .3s) both}
+.tfx-ico{font-size:calc(var(--s)*1.25);line-height:1;font-weight:900;color:#fff;text-shadow:0 2px 0 #0006,0 0 18px #fff8;animation:icein .4s var(--el,0ms) cubic-bezier(.2,1.3,.4,1) both}
+.tfx-ttl{font-size:var(--s);line-height:1.05;font-weight:900;color:#fff;letter-spacing:.5px;text-shadow:0 3px 0 #0007;white-space:nowrap;animation:tslam .35s calc(var(--el,0ms) + .08s) cubic-bezier(.2,1.4,.4,1) both}
+.tfx-sub{font-size:max(11px,calc(var(--s)*.4));font-weight:800;color:#fff;opacity:.92;white-space:nowrap;animation:up .3s calc(var(--el,0ms) + .2s) both}
 @keyframes tslam{0%{transform:scale(2.4) rotate(var(--rot,0deg));opacity:0}100%{transform:scale(1) rotate(var(--rot,0deg));opacity:1}}
 .tfx.small{gap:0}.tfx.small .tfx-ico{display:none}
 .tfx.mine .tfx-ttl{font-size:calc(var(--s)*1.12)}
@@ -304,14 +304,14 @@ body.anim-reduced .c.dupnew{animation:none!important}
 .tfx-bust .tfx-ico{color:#ffd0d8}
 /* FROSSET: isen breder sig over brikken */
 .tfx-freeze{--bg:linear-gradient(160deg,#eefaffee,#8fd6ffd8 50%,#d9f4ffe0)}
-.tfx-freeze::before{animation:icespread .7s var(--el,0ms) ease-out both;box-shadow:inset 0 0 0 3px #fff,inset 0 0 30px #fff}
+.tfx-freeze::before{animation:icespread .45s var(--el,0ms) ease-out both;box-shadow:inset 0 0 0 3px #fff,inset 0 0 30px #fff}
 @keyframes icespread{0%{clip-path:circle(0% at 50% 0%)}100%{clip-path:circle(150% at 50% 0%)}}
 .tfx-freeze .tfx-ico,.tfx-freeze .tfx-ttl,.tfx-freeze .tfx-sub{color:#0d3c66;text-shadow:0 0 10px #fff,0 2px 0 #fff8}
 /* 2. chance / reddet: skjold-hjerte med udbrud */
 .tfx-sc,.tfx-save{--bg:radial-gradient(circle at 50% 40%,#ff8aa0e8,#9b1330ee)}
-.tfx-save .tfx-ico,.tfx-sc .tfx-ico{animation:icein .6s var(--el,0ms) cubic-bezier(.2,1.3,.4,1) both,shbeat .5s calc(var(--el,0ms) + .6s) 2 alternate}
+.tfx-save .tfx-ico,.tfx-sc .tfx-ico{animation:icein .4s var(--el,0ms) cubic-bezier(.2,1.3,.4,1) both,shbeat .3s calc(var(--el,0ms) + .4s) 2 alternate}
 @keyframes shbeat{to{transform:scale(1.18)}}
-.tfx-save::after,.tfx-sc::after{content:'';position:absolute;left:50%;top:42%;width:40%;aspect-ratio:1;border-radius:50%;border:4px solid #fff;transform:translate(-50%,-50%) scale(.3);opacity:0;animation:burst .9s calc(var(--el,0ms) + .25s) ease-out both}
+.tfx-save::after,.tfx-sc::after{content:'';position:absolute;left:50%;top:42%;width:40%;aspect-ratio:1;border-radius:50%;border:4px solid #fff;transform:translate(-50%,-50%) scale(.3);opacity:0;animation:burst .6s calc(var(--el,0ms) + .15s) ease-out both}
 @keyframes burst{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}100%{transform:translate(-50%,-50%) scale(2.6);opacity:0}}
 /* SYV: guld, konfetti der springer ud over kanten, +15 */
 .tfx-seven{--bg:radial-gradient(circle at 50% 45%,#ffe27aee,#c98a00ee);z-index:8}
@@ -608,7 +608,7 @@ function publish() {
 // game.js stopper (S.hold) efter hver hændelse, der skal ses: specialkort, modifikatorer, bust, SYV, hvert Træk 3-/Ekstra
 // træk-kort og hvert bekræftet valg, samt én gang lige før rundeslut. Værten venter her, til animationen er vist hos alle,
 // og fortsætter så spillet (G.resume). Alle får derfor de samme mellemtilstande på samme tid, også efter genforbindelse.
-const PACE_MS = { bust: 2200, save: 2200, seven: 2400, freeze: 2000, take3: 1900, sc: 1800, give: 1800, half: 1800, pause: 1800, extra: 1700, special: 1600, mod: 1300, num: 1000 };
+const PACE_MS = { bust: 1200, save: 1200, seven: 2400, freeze: 1200, take3: 1000, sc: 1100, give: 1000, half: 1100, pause: 1800, extra: 1000, special: 1600, mod: 1300, num: 1000, chain: 550 }; // chain: hvert kort i Træk 3 / Ekstra træk
 const PACE_END_MS = 800; // kort pust før rundeslut og vinder (værten venter, så alle får det samtidig)
 function holdMs(st) {
   const h = st && st.hold; if (!h) return 0;
@@ -617,7 +617,7 @@ function holdMs(st) {
   const es = (st.events || []).filter(e => e.id > h.from);
   es.forEach(e => {
     let d = 0;
-    if (e.type === 'card') d = /^n\d/.test(e.card) ? PACE_MS.num : (e.card[0] === 'm' || e.card[0] === 'd' || e.card === 'x2') ? PACE_MS.mod : PACE_MS.special;
+    if (e.type === 'card') d = /^n\d/.test(e.card) ? (h.x ? PACE_MS.chain : PACE_MS.num) : (e.card[0] === 'm' || e.card[0] === 'd' || e.card === 'x2') ? PACE_MS.mod : PACE_MS.special;
     else d = (PACE_MS[e.type] || 0) + (SET.anim === 'full' && passedOn(e) ? FLY_MS : 0) + ((e.type === 'bust' || e.type === 'save') && SET.anim !== 'none' ? DUP_MS : 0); // kort der flyver først, så brik-animationen
     if (d) { n++; ms = Math.max(ms, d); }
   });
@@ -923,16 +923,16 @@ function flyCard(from, to, card, line, opt) {
   if (line) toast(line, 'action', 2200);
   setTimeout(() => {
     fly.style.opacity = '';
-    fly.style.transition = 'transform 1.1s cubic-bezier(.3,.1,.3,1)';
+    fly.style.transition = 'transform ' + (FLY_MS - 60) + 'ms cubic-bezier(.3,.1,.3,1)';
     fly.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(.72) rotate(' + (rot + 8) + 'deg)';
   }, 40 + (opt.delay || 0));
-  fxBusy(1250 + (opt.delay || 0));
-  setTimeout(() => { if (fly.parentNode) fly.remove(); fxAddCls(fxRow(to), 'fx-land'); if (opt.land) opt.land(); }, 1200 + (opt.delay || 0));
+  fxBusy(FLY_MS + 100 + (opt.delay || 0));
+  setTimeout(() => { if (fly.parentNode) fly.remove(); fxAddCls(fxRow(to), 'fx-land'); if (opt.land) opt.land(); }, FLY_MS + 30 + (opt.delay || 0));
 }
 // ---------- animationer i brikken (ens på alle skærme) ----------
 // Hver stor hændelse spilles inde i den ramte spillers brik. Tekst/ikon skaleres efter brikkens størrelse (8 spillere = små brikker).
-const TILE_MS = { bust: 1900, seven: 2200, save: 1800, freeze: 1800, take3: 1600, sc: 1600, half: 1600, give: 1500, pause: 1600, extra: 1500 };
-const FLY_MS = 1150; // kort der gives videre flyver først hen til målet
+const TILE_MS = { bust: 1150, seven: 2200, save: 1100, freeze: 1100, take3: 950, sc: 1000, half: 1000, give: 900, pause: 1600, extra: 950 };
+const FLY_MS = 650; // kort der gives videre flyver først hen til målet
 const PASSED = { freeze: 'fr', take3: 'f3', sc: 'sc', half: 'gh', give: 'gv' };
 function passedOn(e) { return !!PASSED[e.type] && e.t !== undefined && e.p !== e.t && !e.none; }
 function tileInfo(e) {
@@ -979,7 +979,7 @@ function tileAnim(i, e, v, delay, mine) {
 }
 // Dublet (bust eller reddet af 2. chance): 1) det nye kort ses, 2) det og dubletten i hånden bliver røde, 3) så bust/reddet.
 // Holdes i dupFx og påføres igen efter hver ny tegning, så sekvensen overlever opdateringer.
-const DUP_SHOW = 800, DUP_RED = 700, DUP_MS = DUP_SHOW + DUP_RED;
+const DUP_SHOW = 450, DUP_RED = 400, DUP_MS = DUP_SHOW + DUP_RED;
 let dupFx = {};
 function applyDupFx() {
   const now = Date.now();
@@ -1013,7 +1013,7 @@ function startDupFx(p, card, save, delay, v) {
 }
 // Kort der gives videre (Frys, Træk 3, 2. chance, Giv ÷2, Giv væk) flyver fra giverens brik til målets – hos alle
 function flyPassed(e) {
-  if (e.type === 'take3') { [0, 1, 2].forEach(k => flyCard(e.p, e.t, 'f3', '', { delay: k * 160, rot: (k - 1) * 9 })); return; }
+  if (e.type === 'take3') { [0, 1, 2].forEach(k => flyCard(e.p, e.t, 'f3', '', { delay: k * 90, rot: (k - 1) * 9 })); return; }
   if (e.type === 'give' && e.card) { // Giv væk: kortet forlader giverens brik og lander hos modtageren
     const src = fxRow(e.p), sm = src && src.querySelector('.sm');
     let ghost = null;
