@@ -700,6 +700,8 @@
     name = String(name == null ? '' : name).trim().slice(0, 40);
     return { name: name, games: games, wins: wins };
   }
+  // Navnenøgle til names/{key}: små bogstaver, uden mellemrum, '/' -> '_'. Samme regel i firestore.rules.
+  function nameKey(name) { return String(name == null ? '' : name).trim().slice(0, 40).toLowerCase().replace(/[\t\n\v\f\r ]/g, '').replace(/\//g, '_'); }
   function sortBoard(rows) {
     return (rows || []).slice().sort(function (a, b) {
       var dw = (b.wins | 0) - (a.wins | 0);
@@ -713,7 +715,7 @@
   var api = { buildDeck: buildDeck, shuffle: shuffle, label: label, roundScore: roundScore, tableCards: tableCards, createLobby: createLobby,
     addPlayer: addPlayer, startGame: startGame, startRound: startRound, nextRound: nextRound, act: act, process: process, endRound: endRound, resume: resume,
     canStop: canStop, activeIdx: activeIdx, backToLobby: backToLobby, countCards: countCards, publicView: publicView, drawCard: drawCard,
-    normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, sortBoard: sortBoard,
+    normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, nameKey: nameKey, sortBoard: sortBoard,
     bustRisk: bustRisk, rematch: rematch, rematchState: rematchState, recap: recap, TIERS: TIERS, CAREER: CAREER, COUNTERS: COUNTERS, CAPS: CAPS, SESSION: SESSION, tierOf: tierOf, careerTiers: careerTiers, careerTop: careerTop, sessionBadges: sessionBadges, gameDelta: gameDelta, applyCounters: applyCounters, addPending: addPending, aiStyle: aiStyle, STYLES: STYLES };
   api.eventsSince = function (S, id) { return (S.events || []).filter(function (e) { return e.id > id; }); };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.EnTil = api;
