@@ -7,7 +7,7 @@ try { noFb = !!navigator.webdriver || new URLSearchParams(location.search).has('
 const mock = window.__FLIPX_MOCK || (noFb ? (window.__FLIPX_MOCK = { uid: 'test-uid', players: [], writes: [], offline: true }) : null);
 window.flipNoFb = noFb;
 let initializeApp, getAuth, signInAnonymously, setPersistence, browserLocalPersistence;
-let getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, writeBatch, firebaseConfig;
+let getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, writeBatch, updateDoc, deleteDoc, firebaseConfig;
 async function loadSdk() {
   const V = 'https://www.gstatic.com/firebasejs/12.19.0/';
   const [a, au, fs, cfg] = await Promise.all([
@@ -15,7 +15,7 @@ async function loadSdk() {
   ]);
   ({ initializeApp } = a);
   ({ getAuth, signInAnonymously, setPersistence, browserLocalPersistence } = au);
-  ({ getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, writeBatch } = fs);
+  ({ getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, writeBatch, updateDoc, deleteDoc } = fs);
   ({ firebaseConfig } = cfg);
 }
 const G = window.EnTil;
@@ -265,7 +265,45 @@ async function record(uid, name, won, pend) {
   return res;
 }
 
-window.FlipLive = { ready: ready, loadBoard: loadBoard, loadPlayers: loadPlayers, record: record, checkName: checkName, recoveryCode: recoveryCode, redeemCode: redeemCode, serverName: serverName };
+// ---------- Åbne spil (v24) ----------
+// lobbies/{rum} = {hostUid (auth-uid), hostName, count, max, createdAt, updatedAt, hasCode}. Kun værten skriver.
+// Den 4-cifrede kode gemmes ALDRIG her; værten tjekker den selv over PeerJS.
+const lobbyMade = {};
+const permErr = () => Object.assign(new Error('permission-denied'), { code: 'permission-denied' });
+async function lobbyPut(room, info) {
+  await ready;
+  const base = { hostName: String(info.hostName || 'Vært').slice(0, 40), count: info.count | 0, max: info.max | 0, hasCode: !!info.hasCode };
+  if (mock) {
+    if (mock.noLobbies || !authUid) throw permErr();
+    const L = mock.lobbies = mock.lobbies || {}, now = Date.now();
+    L[room] = Object.assign({ createdAt: (L[room] || {}).createdAt || now }, L[room] || {}, base, { hostUid: authUid, updatedAt: now });
+    (mock.lobbyWrites = mock.lobbyWrites || []).push(room); return;
+  }
+  if (!db || !authUid) throw new Error('ingen database');
+  const ref = doc(db, 'lobbies', room);
+  if (lobbyMade[room]) { try { await updateDoc(ref, Object.assign({}, base, { updatedAt: serverTimestamp() })); return; } catch (e) { if (e && e.code !== 'not-found') throw e; } }
+  await setDoc(ref, Object.assign({ hostUid: authUid }, base, { createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  lobbyMade[room] = true;
+}
+async function lobbyDel(room) {
+  await ready; delete lobbyMade[room];
+  if (mock) { if (mock.noLobbies) throw permErr(); if (mock.lobbies) delete mock.lobbies[room]; return; }
+  if (!db) return;
+  await deleteDoc(doc(db, 'lobbies', room));
+}
+// Liste over ventende spil, nyeste først. Gamle (>2 min uden hjerteslag), fulde og egne skjules.
+async function lobbyList() {
+  await ready;
+  const rows = [], now = Date.now();
+  const ms = v => !v ? 0 : typeof v === 'number' ? v : v.toMillis ? v.toMillis() : 0;
+  if (mock) { if (mock.noLobbies) throw permErr(); Object.entries(mock.lobbies || {}).forEach(([id, x]) => rows.push(Object.assign({ id }, x))); }
+  else { if (!db) throw new Error('ingen database'); const snap = await getDocs(collection(db, 'lobbies')); snap.forEach(d => rows.push(Object.assign({ id: d.id }, d.data()))); }
+  return rows.map(r => Object.assign(r, { updatedAt: ms(r.updatedAt) }))
+    .filter(r => /^[A-Z0-9]{4,8}$/.test(r.id) && now - r.updatedAt < 120000 && (r.count | 0) < (r.max | 0) && r.hostUid !== authUid)
+    .sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 20);
+}
+
+window.FlipLive = { lobbyPut: lobbyPut, lobbyDel: lobbyDel, lobbyList: lobbyList, ready: ready, loadBoard: loadBoard, loadPlayers: loadPlayers, record: record, checkName: checkName, recoveryCode: recoveryCode, redeemCode: redeemCode, serverName: serverName };
 ready.then(uid => {
   if (uid) { if (window.onFlipUid) window.onFlipUid(uid); }
   else if (window.onFlipNoProfile) window.onFlipNoProfile();

@@ -37,6 +37,8 @@ button:disabled{opacity:.35}
 .roomcode{font-size:44px;font-weight:900;letter-spacing:10px;color:#ffcf40;text-align:center;margin:4px 0}
 .qr{background:#fff;border-radius:14px;padding:10px;width:210px;height:210px;margin:10px auto}
 .qr svg{width:100%;height:100%;display:block}
+.tgl{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:15px}.tgl input{width:20px;height:20px}
+.openg{width:100%;display:flex;justify-content:space-between;align-items:center;margin-top:6px;text-align:left}
 .link{word-break:break-all;text-align:center;font-size:12px;color:#9fb0d0}
 .plist .pl{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#22345a;margin-bottom:7px;font-size:17px;font-weight:600}
 .pl .grow{flex:1}
@@ -464,6 +466,7 @@ function peerOpts() {
 function linkFor(room) {
   const p = new URLSearchParams(); p.set('room', room);
   PEER_KEYS.forEach(k => { if (qs.get(k)) p.set(k, qs.get(k)); });
+  if (role === 'host' && LIST && LIST.code && room === LIST.room) p.set('jc', LIST.code);
   return location.origin + location.pathname + '?' + p.toString();
 }
 const STATUS = { active: 'Aktiv', stopped: 'Stoppet', bust: 'Bust', frozen: 'Frosset' };
@@ -473,6 +476,8 @@ const SPEC_LIST = [['fr','Frys'],['f3','Træk 3'],['sc','2. chance'],['et','Ekst
 const MINUS_LIST = [['off','Fra'],['a','−2 −4 −6'],['b','−4 −6 −8'],['c','−8 −10 −12']];
 
 // ---------- tilstand ----------
+// Åbne spil (v24): værtens liste-indstillinger. Koden bliver på værtens telefon og tjekkes over PeerJS.
+let LIST = null, joinJc = String(qs.get('jc') || '').replace(/\D/g, '').slice(0, 4), lobbyHb = null, lobbyGone = {};
 let role = null, room = null, peer = null, S = null, view = null, conns = {}, hostConn = null;
 let connState = 'offline', errMsg = '', myName = LS.get('name', ''), rejected = false, lastMsg = 0, reconnTimer = null, freshHost = false;
 let lastSeq = null, wasMyTurn = false, sending = false, lastEv = null, gvNum = null;
@@ -595,8 +600,9 @@ function toast(txt, kind, ms) { const t = $('toast'); t.textContent = txt; t.cla
 
 // ---------- VÆRT ----------
 function saveHost() { if (S && room) LS.set('host-' + room, S); }
-function hostCreate(name, target) {
+function hostCreate(name, target, lst) {
   role = 'host'; room = genCode(); freshHost = true; myName = name;
+  LIST = Object.assign({ room: room, listed: false, code: '' }, lst || {}); LS.set('list-' + room, LIST);
   S = G.createLobby(target); G.addPlayer(S, myId, name);
   if (window.flipUid) setFuid(S.players[0], window.flipUid);
   LS.set('session', { room, role: 'host' }); saveHost();
@@ -604,7 +610,7 @@ function hostCreate(name, target) {
 }
 function resumeHost(code) {
   role = 'host'; room = code; freshHost = false;
-  S = LS.get('host-' + code);
+  S = LS.get('host-' + code); LIST = LS.get('list-' + code, null);
   S.players.forEach(p => { p.online = p.id === myId; });
   startHostPeer(); publish();
 }
@@ -616,7 +622,7 @@ function startHostPeer() {
     if (pr !== peer) return;
     connState = 'online'; errMsg = ''; freshHost = false;
     history.replaceState(null, '', linkFor(room).replace(location.origin, ''));
-    LS.set('session', { room, role: 'host' }); render();
+    LS.set('session', { room, role: 'host' }); render(); lobbySync();
   });
   pr.on('connection', c => {
     c.last = Date.now();
@@ -629,7 +635,7 @@ function startHostPeer() {
     if (pr !== peer) return;
     console.warn('peer error', e.type, e);
     if (e.type === 'unavailable-id') {
-      if (freshHost && S.phase === 'lobby' && S.players.length === 1) { LS.del('host-' + room); room = genCode(); saveHost(); return startHostPeer(); }
+      if (freshHost && S.phase === 'lobby' && S.players.length === 1) { LS.del('host-' + room); LS.del('list-' + room); room = genCode(); if (LIST) { LIST.room = room; LS.set('list-' + room, LIST); } saveHost(); return startHostPeer(); }
       errMsg = 'Rumkoden er stadig optaget på serveren (fx efter genindlæsning). Prøver igen…';
       connState = 'connecting'; render(); setTimeout(() => { if (pr === peer) startHostPeer(); }, 3000);
     } else if (['network', 'server-error', 'socket-error', 'socket-closed', 'browser-incompatible'].includes(e.type)) {
@@ -649,6 +655,7 @@ function onHostData(c, d) {
     if (!p) {
       if (S.phase !== 'lobby') { send(c, { t: 'reject', reason: 'Spillet er allerede i gang. Vent til værten starter et nyt spil.' }); return setTimeout(() => c.close(), 800); }
       if (S.players.length >= 8) { send(c, { t: 'reject', reason: 'Spillet er fuldt (max 8 spillere).' }); return setTimeout(() => c.close(), 800); }
+      if (LIST && LIST.room === room && LIST.code && String(d.jc || '') !== LIST.code) { c.badJc = (c.badJc | 0) + 1; send(c, { t: 'needcode', wrong: !!d.jc }); return setTimeout(() => c.close(), 800); }
       p = G.addPlayer(S, pid, name); S.seq++; S.log.push({ n: S.seq, txt: name + ' er med', kind: 'info' });
     } else {
       if (S.phase === 'lobby') p.name = name;
@@ -688,6 +695,7 @@ function publish() {
   const v = G.publicView(S);
   Object.values(conns).forEach(c => send(c, { t: 'state', s: v }));
   view = v; render();
+  if (LIST && LIST.listed) lobbySync(true);
   pace();
 }
 // ---------- tempo ----------
@@ -833,7 +841,7 @@ function connectToHost() {
   lastEv = null; // efter (gen)forbindelse afspilles gamle hændelser ikke
   const c = hostConn = peer.connect('flipx-' + room, { reliable: true, metadata: { pid: myId } });
   const to = setTimeout(() => { if (hostConn === c && !c.open) { hostConn = null; try { c.close(); } catch (e) {} connState = 'lost'; if (!errMsg) errMsg = 'Kan ikke nå værten. Prøver igen…'; render(); scheduleReconnect(); } }, 9000);
-  c.on('open', () => { if (hostConn !== c) return; clearTimeout(to); connState = 'online'; errMsg = ''; lastMsg = Date.now(); send(c, { t: 'hello', pid: myId, name: myName, uid: window.flipUid || '' }); render(); });
+  c.on('open', () => { if (hostConn !== c) return; clearTimeout(to); connState = 'online'; errMsg = ''; lastMsg = Date.now(); send(c, { t: 'hello', pid: myId, name: myName, uid: window.flipUid || '', jc: joinJc }); render(); });
   c.on('data', d => { if (hostConn === c) onClientData(d); });
   const lost = () => { if (hostConn !== c) return; clearTimeout(to); hostConn = null; if (rejected) return; connState = 'lost'; errMsg = errMsg || 'Forbindelsen til værten er tabt. Prøver igen…'; render(); scheduleReconnect(); };
   c.on('close', lost); c.on('error', lost);
@@ -848,6 +856,7 @@ function onClientData(d) {
   if (d.t === 'state') { view = d.s; sending = false; render(); }
   else if (d.t === 'ping') send(hostConn, { t: 'pong' });
   else if (d.t === 'err') { sending = false; toast(d.msg); render(); }
+  else if (d.t === 'needcode') { rejected = true; connState = 'offline'; errMsg = ''; askCode(room, myName, !!d.wrong); }
   else if (d.t === 'reject') { rejected = true; errMsg = d.reason; LS.del('session'); connState = 'offline'; view = null; render(); }
 }
 setInterval(() => {
@@ -867,7 +876,7 @@ function leave() {
   const msg = role === 'host' ? 'Afslut spillet? Du er vært, så spillet stopper for alle.' : 'Forlad spillet?';
   if (!confirm(msg)) return;
   stopTurnVibe(); stopAi();
-  if (role === 'host') { Object.values(conns).forEach(c => send(c, { t: 'reject', reason: 'Værten har afsluttet spillet.' })); LS.del('host-' + room); }
+  if (role === 'host') { Object.values(conns).forEach(c => send(c, { t: 'reject', reason: 'Værten har afsluttet spillet.' })); LS.del('host-' + room); if (LIST && LIST.listed && window.FlipLive && window.FlipLive.lobbyDel) window.FlipLive.lobbyDel(room).catch(() => {}); LS.del('list-' + room); }
   LS.del('session');
   setTimeout(() => { try { peer && peer.destroy(); } catch (e) {} location.href = location.pathname + '?' + new URLSearchParams([...qs].filter(([k]) => PEER_KEYS.includes(k))).toString(); }, 300);
 }
@@ -1368,11 +1377,13 @@ function renderHome() {
   { const c = dispCareer(window.flipUid), T = G.careerTiers(c); h += `<button class="primary badgesbtn" id="btnBadges" onclick="openBadges()">🏅 Præstationer <small>· ${T.filter(x => x.tier >= 0).length}/${T.length} badges · ${T.reduce((a, x) => a + x.tier + 1, 0)}/${T.length * 4} trin</small></button>`; }
   h += boardHtml();
   const join = `<div class="card"><h3 style="margin:0 0 4px">${qroom ? 'Deltag i spil' : 'Deltag i et spil'}</h3><div class="lbl">Spilkode</div><input type="text" id="code" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="ABCDE" value="${esc(qroom)}"><button class="primary" id="btnJoin" style="margin-top:12px" onclick="doJoin()">Deltag</button></div>`;
-  const create = `<div class="card"><h3 style="margin:0 0 4px">Opret nyt spil</h3><div class="hint">Din telefon bliver vært. Hold den tændt og med appen åben under spillet.</div><div class="lbl">Spil til (point)</div><input type="number" id="tgt" inputmode="numeric" value="200"><button class="primary" id="btnCreate" style="margin-top:12px" onclick="doCreate()">Opret spil</button></div>`;
+  const create = `<div class="card"><h3 style="margin:0 0 4px">Opret nyt spil</h3><div class="hint">Din telefon bliver vært. Hold den tændt og med appen åben under spillet.</div><div class="lbl">Spil til (point)</div><input type="number" id="tgt" inputmode="numeric" value="200"><label class="tgl"><input type="checkbox" id="visList" ${LS.get('visList', true) ? 'checked' : ''} onchange="$('codeRow').style.display=this.checked?'':'none'"> Vis i listen over åbne spil</label><label class="tgl" id="codeRow" style="${LS.get('visList', true) ? '' : 'display:none'}"><input type="checkbox" id="needCode" ${LS.get('needCode', false) ? 'checked' : ''}> Kræv kode (4 cifre) for at deltage</label><button class="primary" id="btnCreate" style="margin-top:12px" onclick="doCreate()">Opret spil</button></div>`;
   if (sess && !qroom && !rejected) h += `<div class="card"><button class="ghost" style="width:100%" onclick="location.href='${esc(linkFor(sess.room))}'">↻ Genoptag spil ${esc(sess.room)}</button></div>`;
-  h += qroom ? join + create : create + join;
+  const open = `<div class="card" id="openCard"><h3 style="margin:0 0 4px">Åbne spil</h3><div id="openList" class="hint">Henter åbne spil…</div></div>`;
+  h += qroom ? join + create : open + create + join;
   h += `<div class="card hint">Tip: På Android: installer via <b>Chrome</b> (menu → Installer app / Føj til startskærm). Hvis Samsung Internet viser Play Protect, brug Chrome — eller tryk <b>Installer alligevel</b>. På iPhone: del → Føj til hjemmeskærm.<br>Alle spillere skal have internet. Telefonerne forbindes direkte med hinanden.</div>`;
   $('app').innerHTML = h;
+  if (!qroom) loadOpen();
 }
 function nameErrHtml() { const w = LS.get('nameTaken', ''); return w ? `<div class="err" id="nameErr" style="margin-top:8px">Navnet „${esc(w)}“ er allerede taget – vælg et andet</div>` : '<div class="err" id="nameErr" style="margin-top:8px;display:none"></div>'; }
 // Tjek om navnet er taget af en anden spiller (unikke navne). Kan det ikke tjekkes (offline/gamle regler), fortsættes.
@@ -1395,7 +1406,9 @@ function getName() { const n = ($('name').value || '').trim().slice(0, 16); if (
 async function doCreate() {
   const n = getName(); if (!n) return;
   if (await nameIsTaken(n)) return;
-  const t = parseInt($('tgt').value, 10) || 200; errMsg = ''; rejected = false; hostCreate(n, Math.max(10, t));
+  const vl = !!($('visList') && $('visList').checked), nc = vl && !!($('needCode') && $('needCode').checked);
+  LS.set('visList', vl); LS.set('needCode', nc && vl);
+  const t = parseInt($('tgt').value, 10) || 200; errMsg = ''; rejected = false; hostCreate(n, Math.max(10, t), { listed: vl, code: nc ? String(1000 + (crypto.getRandomValues(new Uint16Array(1))[0] % 9000)) : '' });
 }
 async function doJoin() {
   const n = getName(); if (!n) return;
@@ -1404,13 +1417,57 @@ async function doJoin() {
   clientJoin(c, n);
 }
 
+let openT = null, openRows = [];
+async function loadOpen() {
+  clearTimeout(openT);
+  const box = $('openList'); if (!box || !window.FlipLive || !window.FlipLive.lobbyList) { if (box) box.textContent = 'Ingen åbne spil lige nu'; return; }
+  let rows = null;
+  try { rows = await Promise.race([window.FlipLive.lobbyList(), new Promise(r => setTimeout(() => r(null), 5000))]); } catch (e) { rows = null; }
+  const b = $('openList'); if (!b || role) return;
+  openRows = rows || [];
+  b.innerHTML = openRows.length ? openRows.map((r, i) => `<button class="ghost openg" onclick="joinOpen(${i})"><span>${esc(r.hostName)}${/[sxz]$/i.test(r.hostName) ? "'" : 's'} spil</span> <small>· ${r.count | 0}/${r.max | 0}${r.hasCode ? ' · 🔒 kode' : ''}</small></button>`).join('') : 'Ingen åbne spil lige nu';
+  openT = setTimeout(() => { if (!role && $('openList')) loadOpen(); }, 15000);
+}
+async function joinOpen(i) {
+  const r = openRows[i]; if (!r) return;
+  const n = getName(); if (!n) return;
+  if (await nameIsTaken(n)) return;
+  if (r.hasCode) { askCode(r.id, n, false); return; }
+  joinJc = ''; clientJoin(r.id, n);
+}
+// Kodeprompt: værten viser koden; den sendes med i hello og tjekkes af værten.
+let askFor = null;
+function askCode(code, name, wrong) {
+  askFor = { code: code, name: name };
+  $('bottom').style.display = 'none';
+  $('sheet').innerHTML = `<h3 style="margin:0 0 6px">Spillet kræver kode</h3><div class="hint">Spørg værten om den 4-cifrede kode, der står på værtens skærm.</div>${wrong ? '<div class="err" style="margin-top:8px">Forkert kode – prøv igen</div>' : ''}<input type="text" id="jcIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" style="margin-top:10px;font-size:28px;text-align:center;letter-spacing:8px"><button class="primary" id="btnJc" style="margin-top:12px" onclick="sendCode()">Deltag</button><button class="ghost" style="margin-top:8px;width:100%" onclick="$('modal').classList.remove('show');leaveQuiet()">Annuller</button>`;
+  $('modal').classList.add('show'); setTimeout(() => $('jcIn') && $('jcIn').focus(), 50);
+}
+function sendCode() {
+  const code = askFor.code, name = askFor.name;
+  const c = ($('jcIn').value || '').replace(/\D/g, ''); if (c.length !== 4) { toast('Skriv de 4 cifre'); return; }
+  joinJc = c; $('modal').classList.remove('show');
+  if (role === 'client' && room === code && peer && !peer.destroyed) { rejected = false; errMsg = ''; connectToHost(); render(); }
+  else clientJoin(code, name);
+}
+function leaveQuiet() { try { peer && peer.destroy(); } catch (e) {} peer = null; role = null; room = null; view = null; rejected = false; errMsg = ''; LS.del('session'); history.replaceState(null, '', location.pathname + '?' + new URLSearchParams([...qs].filter(([k]) => PEER_KEYS.includes(k) || k === 'nofb')).toString()); render(); }
+// Vært: hjerteslag til lobbies/{rum} mens spillet venter; fjernes ved start/lukning. Fejl (gamle regler) ignoreres.
+let lobbyLast = { k: '', t: 0 };
+function lobbySync(fromPublish) {
+  if (role !== 'host' || !LIST || LIST.room !== room || !LIST.listed || !window.FlipLive || !window.FlipLive.lobbyPut) return;
+  const waiting = S && S.phase === 'lobby' && connState === 'online' && S.players.length < 8;
+  if (waiting) { const k = room + ':' + S.players.length; if (fromPublish && lobbyLast.k === k && Date.now() - lobbyLast.t < 25000) return; lobbyLast = { k: k, t: Date.now() }; lobbyGone[room] = false; window.FlipLive.lobbyPut(room, { hostName: myName, count: S.players.length, max: 8, hasCode: !!LIST.code }).catch(() => {}); }
+  else if (!lobbyGone[room]) { lobbyGone[room] = true; window.FlipLive.lobbyDel(room).catch(() => {}); }
+}
+setInterval(lobbySync, 30000);
+
 function renderLobby() {
   $('bottom').style.display = 'none'; $('modal').classList.remove('show');
   const v = view, host = role === 'host', link = linkFor(room);
   let qr = ''; try { const q = qrcode(0, 'M'); q.addData(link); q.make(); qr = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); } catch (e) {}
   let h = '';
   if (errMsg) h += `<div class="err">${esc(errMsg)}</div>`;
-  h += `<div class="card" style="text-align:center"><div class="hint">${host ? 'Lad de andre scanne koden eller skrive spilkoden' : 'Du er med! Venter på at værten starter spillet…'}</div><div class="roomcode" id="roomcode">${esc(room)}</div><div class="qr">${qr}</div><div class="link">${esc(link)}</div>${host && navigator.share ? `<button class="ghost" style="margin-top:10px" onclick="navigator.share({title:'FlipX',text:'Spil FlipX med mig',url:'${esc(link)}'}).catch(()=>{})">Del link</button>` : ''}</div>`;
+  h += `<div class="card" style="text-align:center"><div class="hint">${host ? 'Lad de andre scanne koden eller skrive spilkoden' : 'Du er med! Venter på at værten starter spillet…'}</div><div class="roomcode" id="roomcode">${esc(room)}</div><div class="qr">${qr}</div><div class="link">${esc(link)}</div>${host && LIST && LIST.room === room && LIST.listed ? `<div class="hint" id="listInfo" style="margin-top:8px">📋 Vises i Åbne spil${LIST.code ? '' : ' for alle'}</div>` : ''}${host && LIST && LIST.room === room && LIST.code ? `<div class="hint" style="margin-top:6px">Kode til at deltage</div><div class="roomcode" id="joinCode" style="letter-spacing:10px">${esc(LIST.code)}</div>` : ''}${host && navigator.share ? `<button class="ghost" style="margin-top:10px" onclick="navigator.share({title:'FlipX',text:'Spil FlipX med mig',url:'${esc(link)}'}).catch(()=>{})">Del link</button>` : ''}</div>`;
   h += `<div class="card"><div class="lbl" style="margin-top:0">Spillere (${v.players.length}/8)</div><div class="plist">` + v.players.map((p, i) => `<div class="pl"><span class="dot ${p.online ? 'on' : 'off'}"></span><span class="grow">${esc(p.name)}${p.id === myId ? ' (dig)' : ''}${i === 0 ? ' 👑' : ''}${p.ai && p.style ? ` <span class="aistyle">${AI_STYLE_TXT[p.style]}</span>` : ''}</span>${host && i > 0 && !p.ai ? `<button class="x" onclick="hostKick('${esc(p.id)}')">✕</button>` : ''}</div>`).join('') + '</div>';
   const sp = v.specials || { fr: true, f3: true, sc: true, et: false, gv: false, pa: false };
   const max = v.deckMax || 12;
@@ -1801,6 +1858,7 @@ function kickRecord() {
   const sess = LS.get('session', null);
   if (qroom && sess && sess.room === qroom && sess.role === 'host' && LS.get('host-' + qroom)) resumeHost(qroom);
   else if (qroom && sess && sess.room === qroom && sess.role === 'client' && myName) clientJoin(qroom, myName);
+  else if (qroom && myName && !(sess && sess.room === qroom)) clientJoin(qroom, myName); // invitationslink/QR: gemt navn -> deltag direkte
   else render();
 })();
 </script>
