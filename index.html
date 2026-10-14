@@ -271,6 +271,30 @@ td.n{text-align:right;font-weight:800}
 .trophy{font-size:110px;animation:icein .8s both}
 .conf{position:absolute;top:42%;left:50%;width:9px;height:15px;background:var(--c);border-radius:2px;z-index:1;animation:conf var(--d) var(--dl) both;pointer-events:none}
 @keyframes conf{0%{transform:translate(0,0) rotate(0) scale(.4);animation-timing-function:cubic-bezier(.1,.8,.3,1)}28%{transform:translate(var(--bx),var(--by)) rotate(calc(var(--r)/3)) scale(1);animation-timing-function:cubic-bezier(.45,0,.8,.7)}100%{transform:translate(var(--sx),70vh) rotate(var(--r))}}
+/* Præstationer (v22) */
+#badgem{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:60}
+#badgem.show{display:flex}
+.badgesbtn{width:100%;margin-bottom:12px;background:linear-gradient(135deg,#7fe3ff,#b28dff)!important;color:#10192e!important}
+.badgesbtn small{font-weight:700;font-size:13px}
+.tier-b{--tc:#cd7f32}.tier-s{--tc:#c0c8d6}.tier-g{--tc:#ffcf40}.tier-d{--tc:#7fe3ff}
+.bcard{display:flex;gap:12px;align-items:center;background:#24365c;border-radius:14px;padding:10px 12px;margin-bottom:8px;border:2px solid transparent;cursor:pointer}
+.bcard.has{border-color:var(--tc)}
+.bcard.none{opacity:.55;filter:grayscale(.8)}
+.bico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;background:#10192e;box-shadow:0 0 0 3px var(--tc,#3a4b70) inset;flex:none;position:relative}
+.bico .tm{position:absolute;right:-4px;bottom:-4px;font-size:15px}
+.bmid{flex:1;min-width:0}.bmid b{font-size:15px}.sub{font-size:12px;color:#9fb0d0}
+.bar{height:7px;background:#10192e;border-radius:6px;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--tc,#3ddc84),#fff8)}
+.prog{font-size:12px;font-weight:800;color:#fff;margin-top:3px;display:flex;justify-content:space-between;gap:6px}
+.tabs{display:flex;gap:6px;margin:0 0 10px}.tabs span{flex:1;text-align:center;padding:8px;border-radius:10px;background:#10192e;font-weight:800;font-size:13px;cursor:pointer}.tabs .on{background:#ffcf40;color:#10192e}
+.sumrow{display:flex;justify-content:space-around;background:#10192e;border-radius:12px;padding:8px;margin-bottom:10px;font-weight:900}.sumrow div{text-align:center;font-size:18px}.sumrow small{display:block;font-size:11px;color:#9fb0d0;font-weight:700}
+.tierrow{display:flex;gap:10px;align-items:center;padding:10px;border-radius:12px;background:#24365c;margin-bottom:8px;border:2px solid transparent}
+.tierrow.done{border-color:var(--tc)}.tierrow.next{border-color:#fff4;border-style:dashed}.tierrow.lock{opacity:.5}
+.tierrow .bico{width:40px;height:40px;font-size:20px}
+.sess{display:flex;gap:10px;align-items:center;background:#1f3a2c;border-radius:12px;padding:9px 10px;margin-bottom:6px}
+.sess .si{font-size:22px;min-width:34px;text-align:center}.sess .sd{font-size:13px;color:#bff5d4}
+.near{background:#2a2f4a;border-radius:12px;padding:8px 10px;font-size:13px;margin-top:6px}.near.up{background:#1f3a2c}
+.topb{display:inline-flex;gap:3px;margin-left:6px;vertical-align:-4px}.topb span{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;background:#10192e;box-shadow:0 0 0 2px var(--tc) inset}
+.boardrow{cursor:pointer}
 /* Revanche, opsummering, badges */
 .rematch{margin-top:10px}
 .rematch .primary.ready{background:#3ddc84;color:#0d2a17}
@@ -283,10 +307,6 @@ td.n{text-align:right;font-weight:800}
 .hl{display:flex;gap:10px;align-items:center;background:#24365c;border-radius:12px;padding:8px 10px;font-size:14px}
 .hl b{font-size:13px;color:#ffcf40}
 .hico{font-size:24px;width:30px;text-align:center;flex:none;font-weight:900}
-.newbadges{margin-top:8px;font-size:13px;font-weight:800;color:#bff5d4}
-.bdg{display:inline-block;background:#1f5c3a;border-radius:12px;padding:2px 8px;margin:2px 2px 0 0;cursor:pointer}
-.bdgs{margin-left:6px}
-.bdg-i{display:inline-block;font-size:14px;margin-right:2px;cursor:pointer;line-height:1;vertical-align:-1px}
 .rtab-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .rtab{border-collapse:collapse;font-size:13px;width:100%}
 .rtab th,.rtab td{padding:4px 5px;text-align:right;border-bottom:1px solid #2b3d63;white-space:nowrap}
@@ -416,6 +436,7 @@ body.anim-none #fx,body.anim-none .floaty,body.anim-none .flyer{display:none!imp
 <div id="ov"></div>
 <div id="fx" role="status" aria-live="assertive"></div>
 <div id="setm" onclick="if(event.target===this)closeSettings()"><div class="sheet" id="setsheet"></div></div>
+<div id="badgem" onclick="if(event.target===this)closeBadges()"><div class="sheet" id="badgesheet"></div></div>
 <script src="vendor/peerjs.min.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="game.js"></script>
@@ -1321,6 +1342,7 @@ function renderHome() {
   let h = '';
   if (errMsg && rejected) h += `<div class="err">${esc(errMsg)}</div>`;
   h += `<div class="card" id="nameCard"><div class="lbl" style="margin-top:0">Dit navn</div><input type="text" id="name" maxlength="16" autocomplete="off" placeholder="Fx Emil" value="${esc(myName)}"><div class="hint" id="deviceHint">Dine tal gemmes på denne enhed. Navnet kan skiftes til hvert spil.</div></div>`;
+  { const c = dispCareer(window.flipUid), T = G.careerTiers(c); h += `<button class="primary badgesbtn" id="btnBadges" onclick="openBadges()">🏅 Præstationer <small>· ${T.filter(x => x.tier >= 0).length}/${T.length} badges · ${T.reduce((a, x) => a + x.tier + 1, 0)}/${T.length * 4} trin</small></button>`; }
   h += boardHtml();
   const join = `<div class="card"><h3 style="margin:0 0 4px">${qroom ? 'Deltag i spil' : 'Deltag i et spil'}</h3><div class="lbl">Spilkode</div><input type="text" id="code" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="ABCDE" value="${esc(qroom)}"><button class="primary" id="btnJoin" style="margin-top:12px" onclick="doJoin()">Deltag</button></div>`;
   const create = `<div class="card"><h3 style="margin:0 0 4px">Opret nyt spil</h3><div class="hint">Din telefon bliver vært. Hold den tændt og med appen åben under spillet.</div><div class="lbl">Spil til (point)</div><input type="number" id="tgt" inputmode="numeric" value="200"><button class="primary" id="btnCreate" style="margin-top:12px" onclick="doCreate()">Opret spil</button></div>`;
@@ -1477,8 +1499,8 @@ function renderGame() {
       else if (!ai && mine && !uid) sub = '<div class="career">Karriere hentes…</div>';
       else if (!ai && st && st.missing) sub = '<div class="career">Ingen gemte tal endnu.</div>';
       else if (!ai && uid) sub = '<div class="career">Karriere hentes…</div>';
-      const bl = ai ? [] : mine ? G.mergeBadges(st && st.badges, localBadges()) : (st && st.badges) || [];
-      return `<div class="rankrow"><span class="place">${r.place}.</span><div class="grow"><b>${esc(label)}</b>${ai ? ' <span class="ain">(AI)</span>' : ''}<span class="bdgs">${badgeIcons(bl)}</span>${sub}</div><span class="pts">${p.total}</span></div>`;
+      const bl = ai || !uid || !st || st.missing ? '' : topIcons(mine ? dispCareer(uid) : st);
+      return `<div class="rankrow"><span class="place">${r.place}.</span><div class="grow"><b>${esc(label)}</b>${ai ? ' <span class="ain">(AI)</span>' : ''}${bl}${sub}</div><span class="pts">${p.total}</span></div>`;
     }).join('') + '</div>';
     // revanche: samme rum, spillere, AI og regler
     const rs = v.rematch || {}, humans = v.players.filter(p => !p.ai && p.online !== false), nReady = humans.filter(p => rs[p.id]).length, meReady = !!rs[myId];
@@ -1488,7 +1510,6 @@ function renderGame() {
       ${role === 'host' ? `<div class="rmrow"><button class="ghost" id="btnRematchNow" onclick="hostRematchNow()">Start revanche nu</button><button class="ghost" id="btnNew" onclick="hostNewGame()">Til lobbyen</button></div>` : ''}</div>`;
     s += recapHtml(v, meIdx);
     sh.innerHTML = s; m.classList.add('show');
-    noteBadges(v, meIdx);
   } else if (v.phase === 'roundEnd') {
     const order = v.players.map((p, i) => i).sort((a, b) => v.players[b].total - v.players[a].total);
     let s = `<h2>Runde ${v.round} er slut</h2>`;
@@ -1503,10 +1524,8 @@ function renderGame() {
 // ---------- opsummering af spillet ----------
 function recapHtml(v, meIdx) {
   const rc = G.recap(v), nm = i => esc(String(v.players[i].name).replace(/ \(AI\)$/, ''));
-  let h = '<div class="recap" id="recap"><div class="lbl" style="margin-top:0">Spillets højdepunkter</div>';
+  let h = '<div class="recap" id="recap">' + sessionRecapHtml(v, meIdx) + '<div class="lbl">Spillets højdepunkter</div>';
   h += rc.hl.length ? '<div class="hls">' + rc.hl.map(x => `<div class="hl" data-k="${x.k}"><span class="hico">${x.ico}</span><div><b>${esc(x.title)}</b><div>${esc(x.txt)}</div></div></div>`).join('') + '</div>' : '<div class="hint">Et roligt spil – ingen store dramaer.</div>';
-  const mine = myBadgesNew || [];
-  if (mine.length) h += `<div class="newbadges" id="newBadges">Nye badges: ${mine.map(k => `<span class="bdg" title="${esc(G.BADGES[k].desc)}" onclick="badgeInfo('${k}')">${G.BADGES[k].ico} ${esc(G.BADGES[k].name)}</span>`).join(' ')}</div>`;
   // runde for runde
   const R = rc.rounds;
   h += `<div class="lbl">Runde for runde</div><div class="rtab-wrap"><table class="rtab" id="roundTab"><tr><th></th>${R.map((r, k) => `<th>${k + 1}</th>`).join('')}<th>Ialt</th></tr>` +
@@ -1546,37 +1565,81 @@ function shareRecap() {
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Billedet er hentet');
   }, 'image/png');
 }
-// ---------- badges ----------
-// Optjenes ved spillets slut. Gemmes lokalt med det samme og i Firestore players/{uid}.badges, når reglerne tillader det.
-let myBadgesNew = null, badgesKey = '';
-function localBadges() { return G.mergeBadges(LS.get('badges', []), []); }
-function badgeIcons(list) { return (list || []).filter(k => G.BADGES[k]).map(k => `<span class="bdg-i" role="button" title="${esc(G.BADGES[k].name)}" onclick="event.stopPropagation();badgeInfo('${k}')">${G.BADGES[k].ico}</span>`).join(''); }
-function badgeInfo(k) { const b = G.BADGES[k]; if (b) toast(b.ico + ' ' + b.name + ' – ' + b.desc, 'action', 3000); }
-function noteBadges(v, meIdx) {
-  if (meIdx < 0 || v.players[meIdx].ai || !v.matchId) return;
-  const key = room + ':' + v.matchId, car = validUid(window.flipUid) ? career[window.flipUid] : null;
-  const got = G.earnedBadges(v, meIdx, car && !car.missing ? car : null);
-  const had = LS.get('badgesBy', {}) || {}, before = localBadges();
-  const fresh = got.filter(k => before.indexOf(k) < 0);
-  const all = G.mergeBadges(before, got);
-  if (fresh.length || badgesKey !== key) {
-    if (badgesKey !== key) myBadgesNew = [];
-    myBadgesNew = G.mergeBadges(myBadgesNew || [], fresh);
-    badgesKey = key;
-    if (fresh.length) { LS.set('badges', all); LS.set('badgesSync', false); setTimeout(render, 0); }
+// ---------- badges (v22): trinvise karriere-badges + sessions-badges ----------
+// Karriere: beregnes ud fra tællerne i players/{uid}. Indtil de nye Firestore-regler er publiceret, afvises tællerne,
+// og de venter lokalt (LS ctrPending) – spil/sejre gemmes stadig (gammel skrivning). Sessions-badges vises kun i opsummeringen.
+function tierCls(t) { return t >= 0 ? 'tier-' + G.TIERS[t].k : ''; }
+const fmtN = n => (n | 0).toLocaleString('da-DK');
+// Vist karriere for en spiller: gemt række + (for dig) ventende tællere og lokal sejrsstime
+function dispCareer(uid) {
+  const r = Object.assign({}, career[uid] || (boardRows || []).find(x => x.id === uid) || {});
+  if (uid && uid === window.flipUid) {
+    const pend = LS.get('ctrPending', {}) || {};
+    Object.keys(G.CAPS).forEach(f => { r[f] = (r[f] | 0) + (pend[f] | 0); });
+    r.bestRisk = Math.max(r.bestRisk | 0, pend.bestRisk | 0);
+    const sl = LS.get('streakLocal', null); if (sl) r.bestStreak = Math.max(r.bestStreak | 0, sl.best | 0);
   }
-  syncBadges();
+  return r;
 }
-let badgeBusy = false;
-function syncBadges() {
-  if (badgeBusy || LS.get('badgesSync', true) || !window.FlipLive || !window.FlipLive.saveBadges || !validUid(window.flipUid)) return;
-  if (LS.get('recorded', '') === '' ) return; // rækken skal findes først (oprettes når et spil gemmes)
-  badgeBusy = true;
-  window.FlipLive.saveBadges(window.flipUid, localBadges()).then(list => {
-    badgeBusy = false; LS.set('badgesSync', true); window.flipBadgesSaved = true;
-    if (career[window.flipUid]) career[window.flipUid].badges = list;
-  }).catch(e => { badgeBusy = false; window.flipBadgesSaved = false; console.warn('badges ikke gemt (gemmes lokalt):', e && (e.code || e.message)); });
+function topIcons(c, n) { return `<span class="topb">${G.careerTop(c, n || 3).map(x => `<span class="${tierCls(x.tier)}" title="${esc(x.def.name + ' – ' + G.TIERS[x.tier].name)}">${x.def.ico}</span>`).join('')}</span>`; }
+let badgeView = { tab: 'career', uid: null };
+function openBadges(uid, tab) { badgeView = { tab: tab || 'career', uid: uid || window.flipUid || '' }; renderBadges(); $('badgem').classList.add('show'); }
+function closeBadges() { $('badgem').classList.remove('show'); }
+function bcardHtml(x) {
+  const d = x.def, t = x.tier, nx = d.t[t + 1], u = d.pct ? ' %' : '', pct = nx ? Math.max(2, Math.min(100, Math.round(x.val / nx * 100))) : 100;
+  return `<div class="bcard ${t >= 0 ? 'has' : 'none'} ${tierCls(t)}" data-k="${d.k}" role="button" onclick="badgeDetail('${d.k}')"><div class="bico">${d.ico}${t >= 0 ? `<span class="tm">${G.TIERS[t].ico}</span>` : ''}</div><div class="bmid"><b>${esc(d.name)}</b> <span class="sub">· ${t >= 0 ? G.TIERS[t].name : 'Ikke opnået'}</span><div class="bar ${nx ? tierCls(t + 1) : tierCls(t)}"><i style="width:${pct}%"></i></div><div class="prog"><span>${fmtN(x.val)}${u}/${nx ? fmtN(nx) + u : 'max'} ${esc(d.unit)}</span><span class="sub">${nx ? '→ ' + G.TIERS[t + 1].name : 'Højeste trin 💎'}</span></div></div></div>`;
 }
+function renderBadges() {
+  const uid = badgeView.uid, mine = uid === window.flipUid, c = dispCareer(uid), T = G.careerTiers(c);
+  const who = mine ? 'Dine præstationer' : esc(((boardRows || []).find(x => x.id === uid) || career[uid] || {}).name || 'Spiller') + 's præstationer';
+  const has = T.filter(x => x.tier >= 0).length, tiers = T.reduce((a, x) => a + x.tier + 1, 0), dia = T.filter(x => x.tier === 3).length;
+  let h = `<h2>🏅 ${who} <button class="x" onclick="closeBadges()" aria-label="Luk">✕</button></h2>
+    <div class="sumrow" id="badgeSum"><div>${has}/${T.length}<small>badges</small></div><div>${tiers}/${T.length * 4}<small>trin</small></div><div>💎 ${dia}<small>diamant</small></div></div>`;
+  if (mine) h += `<div class="tabs" id="badgeTabs"><span class="${badgeView.tab === 'career' ? 'on' : ''}" role="button" data-tab="career" onclick="badgeView.tab='career';renderBadges()">Karriere</span><span class="${badgeView.tab === 'last' ? 'on' : ''}" role="button" data-tab="last" onclick="badgeView.tab='last';renderBadges()">Sidste spil</span></div>`;
+  if (mine && badgeView.tab === 'last') {
+    const ls = LS.get('lastSession', null);
+    if (!ls) h += '<div class="hint">Spil et spil færdigt – så vises det, du klarede i spillet, her.</div>';
+    else {
+      h += `<div class="hint" style="margin-bottom:8px">${esc(ls.date || '')} · ${ls.won ? 'Du vandt 🏆' : 'Du blev nr. ' + (ls.place || '?')}</div>`;
+      h += ls.keys.length ? ls.keys.map(sessHtml).join('') : '<div class="hint">Ingen sessions-badges i det spil.</div>';
+    }
+  } else {
+    h += `<div id="badgeList">${T.map(bcardHtml).join('')}</div>`;
+    if (mine && Object.keys(LS.get('ctrPending', {}) || {}).length) h += '<div class="hint">Nogle tal er kun gemt på denne telefon endnu og bliver lagt op, så snart ranglisten tillader det.</div>';
+  }
+  h += `<button class="primary" style="margin-top:10px" onclick="closeBadges()">Luk</button>`;
+  $('badgesheet').innerHTML = h;
+}
+function badgeDetail(k) {
+  const d = G.CAREER.find(x => x.k === k), c = dispCareer(badgeView.uid), val = c[d.f] | 0, t = G.tierOf(d, val), u = d.pct ? ' %' : '';
+  let h = `<h2>${d.ico} ${esc(d.name)} <button class="x" onclick="renderBadges()" aria-label="Tilbage">✕</button></h2><div class="hint" style="margin-bottom:10px">${esc(d.desc)} Nu: ${fmtN(val)}${u} ${esc(d.unit)}.</div><div id="tierList">`;
+  h += G.TIERS.map((x, i) => `<div class="tierrow tier-${x.k} ${i <= t ? 'done' : i === t + 1 ? 'next' : 'lock'}"><div class="bico">${d.ico}<span class="tm">${x.ico}</span></div><div class="bmid"><b>${x.name}</b><div class="sub">${fmtN(d.t[i])}${u} ${esc(d.unit)}</div>${i === t + 1 ? `<div class="bar tier-${x.k}"><i style="width:${Math.max(2, Math.round(val / d.t[i] * 100))}%"></i></div><div class="prog"><span>${fmtN(val)}${u}/${fmtN(d.t[i])}${u}</span><span class="sub">mangler ${fmtN(d.t[i] - val)}${u}</span></div>` : ''}</div><div style="font-weight:900">${i <= t ? '✓' : i === t + 1 ? '' : '🔒'}</div></div>`).join('');
+  h += `</div><button class="primary" style="margin-top:10px" onclick="renderBadges()">Tilbage</button>`;
+  $('badgesheet').innerHTML = h;
+}
+function sessHtml(k) { const b = G.SESSION[k]; return b ? `<div class="sess" data-k="${k}"><span class="si">${b.ico}</span><div><b>${esc(b.name)}</b><div class="sd">${esc(b.desc)}</div></div></div>` : ''; }
+// Recap: dine sessions-badges + karriere-trin der lige er nået / er tæt på
+function sessionRecapHtml(v, meIdx) {
+  if (meIdx < 0 || v.players[meIdx].ai) return '';
+  const keys = G.sessionBadges(v, meIdx);
+  let h = `<div class="lbl" style="margin-top:0">Det klarede du i dette spil</div><div id="sessList">${keys.length ? keys.map(sessHtml).join('') : '<div class="hint">Ingen sessions-badges denne gang.</div>'}</div>`;
+  const uid = window.flipUid;
+  if (validUid(uid) && career[uid] && !career[uid].missing) {
+    const now = G.careerTiers(dispCareer(uid)), before = careerBefore[v.matchId];
+    const lines = [];
+    now.forEach(x => {
+      const b = before && before.find(y => y.k === x.k);
+      if (b && x.tier > b.tier) lines.push(`<div class="near up">${G.TIERS[x.tier].ico} <b>${esc(x.def.name)}</b> nået: ${G.TIERS[x.tier].name}</div>`);
+    });
+    now.filter(x => x.def.t[x.tier + 1] && x.val / x.def.t[x.tier + 1] >= 0.6).sort((a, b) => b.val / b.def.t[b.tier + 1] - a.val / a.def.t[a.tier + 1]).slice(0, 2).forEach(x => {
+      const nx = x.def.t[x.tier + 1], u = x.def.pct ? ' %' : '';
+      lines.push(`<div class="near">${x.def.ico} <b>${esc(x.def.name)}</b>: ${fmtN(x.val)}${u}/${fmtN(nx)}${u} ${esc(x.def.unit)} → ${G.TIERS[x.tier + 1].name}<div class="bar ${tierCls(x.tier + 1)}"><i style="width:${Math.round(x.val / nx * 100)}%"></i></div></div>`);
+    });
+    if (lines.length) h += `<div class="lbl">Karriere – nye trin og tæt på</div><div id="nearList">${lines.join('')}</div>`;
+  }
+  return h;
+}
+const careerBefore = {};
 
 // ---------- rangliste ----------
 let career = {};
@@ -1595,8 +1658,8 @@ function boardHtml() {
   if (boardError) body = '<div class="hint">Rangliste kan ikke hentes lige nu. Spillet virker alligevel.</div>';
   else if (!rows) body = '<div class="hint">Henter rangliste…</div>';
   else if (!rows.length) body = '<div class="hint">Ingen spil endnu. Listen fyldes, når nogen har vundet et spil.</div>';
-  else body = rows.map((r, i) => `<div class="pl boardrow"><span class="place">${i + 1}</span><span class="grow"><b>${esc(r.name || 'Spiller')}</b>${r.id === window.flipUid ? ' <span class="dig">Dig</span>' : ''}<span class="bdgs">${badgeIcons(r.id === window.flipUid ? G.mergeBadges(r.badges, localBadges()) : r.badges)}</span><div class="career">${r.wins} sejre · ${r.games} spil · ${G.formatPercent(G.winPercent(r.wins, r.games))}</div></span></div>`).join('');
-  return `<div class="card" id="boardCard"><div class="lbl" style="margin-top:0">Rangliste</div><div id="boardList">${body}</div><div class="hint">Sidst kendte navn, sejre, spil og sejrprocent. AI tæller ikke med. Tryk på et badge for at se, hvad det betyder.</div></div>`;
+  else body = rows.map((r, i) => `<div class="pl boardrow" role="button" data-uid="${esc(r.id)}" onclick="openBadges('${esc(r.id)}')"><span class="place">${i + 1}</span><span class="grow"><b>${esc(r.name || 'Spiller')}</b>${r.id === window.flipUid ? ' <span class="dig">Dig</span>' : ''}${topIcons(r.id === window.flipUid ? dispCareer(r.id) : r)}<div class="career">${r.wins} sejre · ${r.games} spil · ${G.formatPercent(G.winPercent(r.wins, r.games))}</div></span></div>`).join('');
+  return `<div class="card" id="boardCard"><div class="lbl" style="margin-top:0">Rangliste</div><div id="boardList">${body}</div><div class="hint">Sidst kendte navn, sejre, spil og sejrprocent. AI tæller ikke med. Ikonerne er de 3 højeste badge-trin – tryk på en spiller for alle badges.</div><button class="ghost" id="btnBoardBadges" style="width:100%;margin-top:8px" onclick="openBadges()">🏅 Se dine præstationer</button></div>`;
 }
 function loadHomeBoard() {
   if (!window.FlipLive) return;
@@ -1614,7 +1677,7 @@ function attachUid() {
   } else if (role === 'client' && hostConn && hostConn.open) send(hostConn, { t: 'uid', uid: uid });
 }
 window.onFlipUid = function (uid) {
-  window.flipUid = uid; setTimeout(syncBadges, 1500);
+  window.flipUid = uid;
   LS.set('uid', uid);
   attachUid();
   if (!role || rejected) loadHomeBoard();
@@ -1660,14 +1723,29 @@ function kickRecord() {
   if (!me || me.ai || !validUid(window.flipUid)) return;
   recordBusy = key;
   const won = (view.winners || []).some(i => view.players[i] && view.players[i].id === myId);
-  window.FlipLive.record(window.flipUid, me.name, won).then(next => {
+  const meIdx = view.players.indexOf(me), v = view, uid = window.flipUid;
+  // Tællere for dette spil lægges oven i dem der venter lokalt; gemmes kun lokalt, hvis skrivningen lykkes
+  const pend = G.addPending(LS.get('ctrPending', {}) || {}, G.gameDelta(v, meIdx));
+  window.FlipLive.record(uid, me.name, won, pend).then(next => {
     LS.set('recorded', key);
-    career[window.flipUid] = Object.assign({}, career[window.flipUid] || {}, next, { missing: false });
-    setTimeout(syncBadges, 0);
+    LS.set('ctrPending', next.rest || {});
+    const sl = LS.get('streakLocal', { cur: 0, best: 0 }) || { cur: 0, best: 0 };
+    sl.cur = won ? (sl.cur | 0) + 1 : 0; sl.best = Math.max(sl.best | 0, sl.cur); LS.set('streakLocal', sl);
+    window.flipLegacySave = !!next.legacy;
+    const rk = G.gameRanking(v.players).find(r => r.i === meIdx);
+    LS.set('lastSession', { matchId: v.matchId, date: new Date().toLocaleDateString('da-DK'), won, place: rk ? rk.place : 0, keys: G.sessionBadges(v, meIdx) });
+    const c = Object.assign({}, next); delete c.rest; delete c.legacy;
+    career[uid] = Object.assign({}, career[uid] || {}, c, { missing: false });
+    // trin før spillet (til "nye trin" i opsummeringen)
+    const dl = G.gameDelta(v, meIdx), now = dispCareer(uid), b4 = Object.assign({}, now, { games: Math.max(0, now.games - 1), wins: Math.max(0, now.wins - (won ? 1 : 0)) });
+    Object.keys(G.CAPS).forEach(f => { b4[f] = Math.max(0, (b4[f] | 0) - (dl[f] | 0)); });
+    if (won) b4.bestStreak = Math.max(0, Math.max(LS.get('streakLocal', {}).best | 0, now.bestStreak | 0) - (sl.cur === sl.best ? 1 : 0));
+    careerBefore[v.matchId] = G.careerTiers(b4);
     if (view && view.phase === 'over') render();
   }).catch(e => { recordBusy = ''; window.flipSaveFail = true; if (view && view.phase === 'over') render(); console.warn('kunne ikke gemme karriere', e && e.message ? e.message : e); });
 }
 
+['badges', 'badgesSync', 'badgesBy'].forEach(k => { try { LS.del(k); } catch (e) {} }); // v21-badges udfases
 // ---------- start ----------
 (function boot() {
   const qroom = (qs.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');

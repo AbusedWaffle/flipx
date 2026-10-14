@@ -107,7 +107,7 @@
   }
   function startGame(S, rng) {
     if (S.players.length < 2) return { ok: false, err: 'Mindst 2 spillere' };
-    S.phase = 'play'; S.round = 0; S.dealer = -1; S.history = []; S.winners = []; S.tie = false; S.rematch = {};
+    S.phase = 'play'; S.round = 0; S.dealer = -1; S.history = []; S.winners = []; S.tie = false; S.rematch = {}; S.isRematch = false;
     S.stats = S.players.map(function () { return newStats(); });
     normalizeRules(S);
     S.deck = shuffle(buildDeck(S.deckMax, S.specials, S.chance, S.minus, S.minusChance), rng); S.discard = [];
@@ -139,7 +139,7 @@
     return S.deck.pop();
   }
   // ---------- statistik til spil-opsummering og badges ----------
-  function newStats() { return { bust: 0, brave: 0, frozen: 0, given: 0, seven: 0, frzLead: [] }; }
+  function newStats() { return { bust: 0, brave: 0, frozen: 0, given: 0, seven: 0, frzLead: [], busts: 0, saves: 0, saveRounds: [], frys: 0, ghTo: [], cards: 0, riskMax: 0 }; }
   function st(S, i) {
     if (!S.stats) S.stats = [];
     while (S.stats.length < S.players.length) S.stats.push(newStats());
@@ -171,17 +171,20 @@
         risk = dn / (S.deck.length + 1);
       }
       if (risk !== undefined && !(p.nums.indexOf(v) >= 0 && !p.sc)) { var so = st(S, i); if (risk > so.brave) so.brave = risk; }
+      if (risk !== undefined) { var sr = st(S, i); if (risk > (sr.riskMax || 0)) sr.riskMax = risk; }
+      if (verb === 'trak') st(S, i).cards = (st(S, i).cards || 0) + 1;
       if (p.nums.indexOf(v) >= 0) {
         if (p.sc) {
           p.sc = false; p.acts.splice(p.acts.indexOf('sc'), 1);
           S.discard.push('sc', card);
           log(S, nm(S, i) + ' ' + verb + ' ' + v + ' igen – reddet af 2. chance!', 'save');
+          st(S, i).saves++; st(S, i).saveRounds.push(S.round);
           ev(S, 'save', { p: i, card: card, f3: f3 });
         } else {
           p.status = 'bust'; p.bustCard = v;
           log(S, nm(S, i) + ' ' + verb + ' ' + v + ' igen og gik bust!', 'bust');
           ev(S, 'bust', { p: i, card: card, f3: f3, lost: roundScoreRaw(p) });
-          var sb = st(S, i); if (roundScoreRaw(p) > sb.bust) sb.bust = roundScoreRaw(p);
+          var sb = st(S, i); if (roundScoreRaw(p) > sb.bust) sb.bust = roundScoreRaw(p); sb.busts++;
         }
       } else {
         p.nums.push(v);
@@ -192,6 +195,7 @@
       return;
     }
     var action = SPEC_KEYS.indexOf(card) >= 0;
+    if (verb === 'trak') st(S, i).cards = (st(S, i).cards || 0) + 1;
     log(S, nm(S, i) + ' ' + verb + ' ' + label(card), action ? 'action' : '');
     ev(S, 'card', { p: i, card: card, f3: f3, deal: deal });
     if (isMod(card)) { p.mods.push(card); return; }
@@ -251,6 +255,7 @@
         r.sc = false; r.acts.splice(r.acts.indexOf('sc'), 1);
         S.discard.push('sc', card);
         log(S, nm(S, from) + ' gav ' + v + ' til ' + r.name + ' – reddet af 2. chance!', 'save');
+        st(S, target).saves++; st(S, target).saveRounds.push(S.round);
         ev(S, 'give', { p: from, t: target, card: card });
         ev(S, 'save', { p: target, card: card });
       } else {
@@ -258,7 +263,7 @@
         log(S, nm(S, from) + ' gav ' + v + ' til ' + r.name + ', som gik bust!', 'bust');
         ev(S, 'give', { p: from, t: target, card: card, bust: 1 });
         ev(S, 'bust', { p: target, card: card, lost: roundScoreRaw(r) });
-        var sg = st(S, target); if (roundScoreRaw(r) > sg.bust) sg.bust = roundScoreRaw(r);
+        var sg = st(S, target); if (roundScoreRaw(r) > sg.bust) sg.bust = roundScoreRaw(r); sg.busts++;
       }
     } else {
       r.nums.push(v);
@@ -273,6 +278,7 @@
     if (card === 'fr') {
       st(S, target).frozen++;
       if (!self && isLeader(S, target)) st(S, from).frzLead.push(S.round);
+      if (!self) st(S, from).frys++;
       tp.status = 'frozen'; tp.acts.push('fr');
       log(S, self ? nm(S, from) + ' frøs sig selv (' + roundScore(tp) + ' point)' : nm(S, from) + ' frøs ' + tp.name + ' (' + roundScore(tp) + ' point)', 'action');
       ev(S, 'freeze', { p: from, t: target, pts: roundScore(tp) });
@@ -282,7 +288,7 @@
       ev(S, 'take3', { p: from, t: target });
       S.queue.unshift({ t: 'take3', target: target, left: 3, aside: [] });
     } else if (card === 'gh') {
-      tp.acts.push('gh');
+      tp.acts.push('gh'); if (!self) st(S, from).ghTo.push(target);
       log(S, self ? nm(S, from) + ' må selv beholde Giv ÷2 (ingen andre aktive)' : nm(S, from) + ' giver ÷2 til ' + tp.name, 'action');
       ev(S, 'half', { p: from, t: target, card: 'gh' });
     } else if (card === 'sc') {
@@ -435,6 +441,7 @@
     if (S.phase !== 'over') return { ok: false, err: 'Spillet er ikke slut' };
     backToLobby(S);
     var r = startGame(S, rng);
+    S.isRematch = true;
     if (r.ok) log(S, 'Revanche!', 'info');
     return r;
   }
@@ -464,29 +471,92 @@
     if ((b = best(function (s) { return s.seven; }))) out.push({ k: 'seven', ico: '7', title: 'Syv forskellige', p: b.p, txt: name(b.p) + ' fik 7 forskellige' + (b.v > 1 ? ' ' + b.v + '×' : '') });
     return { hl: out.slice(0, 5), rounds: H, low: low, deficit: deficit };
   }
-  // Badges optjent i dette spil for spiller i. car = karriere efter spillet ({games, wins}) eller null.
-  var BADGES = {
-    first: { ico: '🏆', name: 'Første sejr', desc: 'Vandt sit første spil' },
-    g10: { ico: '🔟', name: '10 spil', desc: 'Har spillet 10 spil' },
-    seven: { ico: '7️⃣', name: '7-unik', desc: 'Fik 7 forskellige talkort i én runde' },
-    risk70: { ico: '🎲', name: 'Overlevede 70 % risiko', desc: 'Trak og overlevede med mindst 70 % risiko for bust' },
-    frzlead: { ico: '❄', name: 'Frøs føreren', desc: 'Frøs føreren i spillets sidste runde' },
-    comeback: { ico: '🚀', name: 'Comeback fra minus', desc: 'Var i minus undervejs og vandt alligevel' }
+  // ---------- badges (v22) ----------
+  // Karriere-badges er trinvise og beregnes ud fra tællere i players/{uid}. Sessions-badges gælder ét spil og gemmes ikke.
+  var TIERS = [{ k: 'b', name: 'Bronze', ico: '🥉' }, { k: 's', name: 'Sølv', ico: '🥈' }, { k: 'g', name: 'Guld', ico: '🥇' }, { k: 'd', name: 'Diamant', ico: '💎' }];
+  var CAREER = [
+    { k: 'wins', f: 'wins', ico: '🏆', name: 'Sejrherre', unit: 'sejre', t: [1, 10, 50, 200], desc: 'Vind spil.' },
+    { k: 'games', f: 'games', ico: '🎮', name: 'Stamgæst', unit: 'spil', t: [10, 50, 200, 500], desc: 'Spil færdige spil.' },
+    { k: 'sevens', f: 'sevens', ico: '7️⃣', name: 'Syvstjerne', unit: 'runder med 7 forskellige', t: [1, 5, 25, 100], desc: 'Få 7 forskellige talkort i en runde.' },
+    { k: 'risk', f: 'bestRisk', ico: '🎲', name: 'Dumdristig', unit: 'højeste risiko overlevet', pct: 1, t: [40, 55, 70, 85], desc: 'Træk et kort med høj risiko for bust – og overlev.' },
+    { k: 'points', f: 'points', ico: '💯', name: 'Pointmaskine', unit: 'point i alt', t: [1000, 10000, 50000, 200000], desc: 'Point scoret i alt (positive runder).' },
+    { k: 'saves', f: 'saves', ico: '🛡️', name: 'Skytsengel', unit: 'bust undgået med 2. chance', t: [1, 10, 50, 200], desc: 'Bliv reddet af 2. chance.' },
+    { k: 'frys', f: 'frysGiven', ico: '❄️', name: 'Isdronning/-konge', unit: 'Frys givet', t: [5, 25, 100, 400], desc: 'Frys andre spillere.' },
+    { k: 'cards', f: 'cards', ico: '🃏', name: 'Kortsamler', unit: 'kort trukket', t: [100, 1000, 5000, 20000], desc: 'Træk kort.' },
+    { k: 'rematch', f: 'rematches', ico: '🔁', name: 'Revanchelysten', unit: 'revancher', t: [1, 10, 50, 200], desc: 'Spil revancher.' },
+    { k: 'streak', f: 'bestStreak', ico: '🔥', name: 'Sejrsstime', unit: 'sejre i træk (bedste)', t: [2, 3, 5, 10], desc: 'Vind flere spil i træk.' },
+    { k: 'busts', f: 'busts', ico: '💥', name: 'Bust-veteran', unit: 'gange bust', t: [10, 50, 200, 1000], desc: 'Gå bust (det sker for de bedste).' },
+    { k: 'gifts', f: 'gifts', ico: '🎁', name: 'Gavmild', unit: 'specialkort givet', t: [10, 50, 200, 1000], desc: 'Giv specialkort til andre (Frys, Træk 3, 2. chance, Giv ÷2, Giv væk).' }
+  ];
+  // Tællere pr. spiller og loft pr. spil (samme lofter i Firestore-reglerne)
+  var COUNTERS = ['sevens', 'bestRisk', 'points', 'saves', 'frysGiven', 'cards', 'rematches', 'streak', 'bestStreak', 'busts', 'gifts'];
+  var CAPS = { sevens: 10, saves: 20, frysGiven: 30, busts: 30, gifts: 60, points: 2000, cards: 400, rematches: 1 };
+  var SESSION = {
+    kongemord: { ico: '❄️👑', name: 'Kongemord', desc: 'Frøs føreren i spillets sidste runde' },
+    minustop: { ico: '🚀', name: 'Fra minus til top', desc: 'Var i minus undervejs og vandt' },
+    ismaven: { ico: '🎲', name: 'Is i maven', desc: 'Overlevede et træk med mindst 70 % risiko' },
+    rentavle: { ico: '🧼', name: 'Ren tavle', desc: 'Gik aldrig bust i hele spillet (mindst 3 runder)' },
+    rekord: { ico: '📈', name: 'Rekordrunde', desc: 'Spillets største enkeltrunde (mindst 50 point)' },
+    halver: { ico: '➗', name: 'Halvér kongen', desc: 'Gav ÷2 til den, der endte med at vinde' },
+    fryseboks: { ico: '🧊', name: 'Fryseboks', desc: 'Gav 3 eller flere Frys i ét spil' },
+    modalle: { ico: '👥', name: 'Mod alle odds', desc: 'Vandt et spil med 8 spillere' },
+    dobbeltsyv: { ico: '7️⃣7️⃣', name: 'Dobbelt-syv', desc: '7 forskellige i to runder i samme spil' },
+    reddet: { ico: '🛡️', name: 'Reddet på stregen', desc: '2. chance reddede dig, og du fik alligevel rundens flest point' },
+    langsomt: { ico: '🐢', name: 'Langsomt og sikkert', desc: 'Vandt uden at trække over 30 % risiko én eneste gang' },
+    praecis: { ico: '🎯', name: 'Præcis', desc: 'Ramte spillets mål på præcis det antal point' }
   };
-  function earnedBadges(v, i, car) {
-    var s = (v.stats || [])[i] || newStats(), out = [], won = (v.winners || []).indexOf(i) >= 0, rc = recap(v);
-    if (s.seven > 0) out.push('seven');
-    if (s.brave >= 0.7) out.push('risk70');
-    if ((s.frzLead || []).indexOf(v.round) >= 0) out.push('frzlead');
-    if (won && rc.low[i] < 0) out.push('comeback');
-    if (car && car.wins >= 1) out.push('first');
-    if (car && car.games >= 10) out.push('g10');
+  function tierOf(def, val) { var t = -1; for (var k = 0; k < def.t.length; k++) if ((val | 0) >= def.t[k]) t = k; return t; }
+  function careerVal(c, def) { return ((c || {})[def.f]) | 0; }
+  function careerTiers(c) { return CAREER.map(function (d) { return { k: d.k, def: d, val: careerVal(c, d), tier: tierOf(d, careerVal(c, d)) }; }); }
+  // De højeste trin (til ranglisten): højest trin først, ved lige trin i listens rækkefølge
+  function careerTop(c, n) {
+    return careerTiers(c).filter(function (x) { return x.tier >= 0; }).sort(function (a, b) { return b.tier - a.tier || CAREER.indexOf(a.def) - CAREER.indexOf(b.def); }).slice(0, n || 3);
+  }
+  // Sessions-badges for spiller i i et afsluttet spil
+  function sessionBadges(v, i) {
+    var s = (v.stats || [])[i] || newStats(), out = [], P = v.players || [], H = v.history || [], w = (v.winners || [])[0], won = w === i, rc = recap(v), r, k;
+    if ((s.frzLead || []).indexOf(v.round) >= 0) out.push('kongemord');
+    if (won && rc.low[i] < 0) out.push('minustop');
+    if (s.brave >= 0.7) out.push('ismaven');
+    if (!(s.busts | 0) && H.length >= 3) out.push('rentavle');
+    var mine = 0, top = 0;
+    for (r = 0; r < H.length; r++) for (k = 0; k < P.length; k++) { var x = H[r][k] | 0; if (x > top) top = x; if (k === i && x > mine) mine = x; }
+    if (mine >= 50 && mine === top) out.push('rekord');
+    if (w !== undefined && w !== i && (s.ghTo || []).indexOf(w) >= 0) out.push('halver');
+    if ((s.frys | 0) >= 3) out.push('fryseboks');
+    if (won && P.length >= 8) out.push('modalle');
+    if ((s.seven | 0) >= 2) out.push('dobbeltsyv');
+    if ((s.saveRounds || []).some(function (rd) { var row = H[rd - 1]; return row && (row[i] | 0) > 0 && (row[i] | 0) === Math.max.apply(null, row); })) out.push('reddet');
+    if (won && (s.riskMax || 0) <= 0.3) out.push('langsomt');
+    if (won && P[i] && P[i].total === v.target) out.push('praecis');
     return out;
   }
-  function mergeBadges(old, add) {
-    var r = Array.isArray(old) ? old.filter(function (k) { return typeof k === 'string' && BADGES[k]; }) : [];
-    (add || []).forEach(function (k) { if (BADGES[k] && r.indexOf(k) < 0) r.push(k); });
-    return r.slice(0, 20);
+  // Tællernes tilvækst fra ét spil (allerede begrænset til lofterne)
+  function gameDelta(v, i) {
+    var s = (v.stats || [])[i] || newStats(), pts = 0;
+    (v.history || []).forEach(function (row) { var x = row[i] | 0; if (x > 0) pts += x; });
+    var d = { sevens: s.seven | 0, bestRisk: Math.round((s.brave || 0) * 100), points: pts, saves: s.saves | 0, frysGiven: s.frys | 0,
+      cards: s.cards | 0, rematches: v.isRematch ? 1 : 0, busts: s.busts | 0, gifts: s.given | 0 };
+    Object.keys(CAPS).forEach(function (f) { if (d[f] > CAPS[f]) d[f] = CAPS[f]; if (d[f] < 0) d[f] = 0; });
+    if (d.bestRisk > 100) d.bestRisk = 100;
+    return d;
+  }
+  // Læg ventende tællere (pend) oven i den gemte række (prev), højst ét spils loft pr. skrivning. Returnerer {counters, rest}.
+  function applyCounters(prev, pend, won) {
+    prev = prev || {}; pend = pend || {};
+    var out = {}, rest = {};
+    COUNTERS.forEach(function (f) { out[f] = (prev[f] | 0); });
+    Object.keys(CAPS).forEach(function (f) { var add = pend[f] | 0, take = Math.min(add, CAPS[f]); out[f] += take; if (add - take > 0) rest[f] = add - take; });
+    out.bestRisk = Math.min(100, Math.max(prev.bestRisk | 0, pend.bestRisk | 0));
+    out.streak = won ? (prev.streak | 0) + 1 : 0;
+    out.bestStreak = Math.max(prev.bestStreak | 0, out.streak);
+    return { counters: out, rest: rest };
+  }
+  function addPending(a, d) {
+    var r = Object.assign({}, a || {});
+    Object.keys(CAPS).forEach(function (f) { var x = (r[f] | 0) + (d[f] | 0); if (x) r[f] = x; });
+    var br = Math.max(r.bestRisk | 0, d.bestRisk | 0); if (br) r.bestRisk = br;
+    return r;
   }
   // AI-personligheder: forsigtig / normal / vild – fast pr. navn
   var STYLES = ['careful', 'normal', 'wild'];
@@ -622,7 +692,7 @@
     return s + ' %';
   }
   // Én afsluttet kamp for denne telefon. games +1, wins +1 kun ved sejr. Navn er det, der blev spillet som.
-  function nextCareer(prev, won, name) {
+  function nextCareer(prev, won, name) { // kun navn/spil/sejre (tællerne: applyCounters)
     var games = ((prev && prev.games) | 0) + 1;
     var wins = ((prev && prev.wins) | 0) + (won ? 1 : 0);
     if (wins > games) wins = games;
@@ -644,7 +714,7 @@
     addPlayer: addPlayer, startGame: startGame, startRound: startRound, nextRound: nextRound, act: act, process: process, endRound: endRound, resume: resume,
     canStop: canStop, activeIdx: activeIdx, backToLobby: backToLobby, countCards: countCards, publicView: publicView, drawCard: drawCard,
     normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, sortBoard: sortBoard,
-    bustRisk: bustRisk, rematch: rematch, rematchState: rematchState, recap: recap, BADGES: BADGES, earnedBadges: earnedBadges, mergeBadges: mergeBadges, aiStyle: aiStyle, STYLES: STYLES };
+    bustRisk: bustRisk, rematch: rematch, rematchState: rematchState, recap: recap, TIERS: TIERS, CAREER: CAREER, COUNTERS: COUNTERS, CAPS: CAPS, SESSION: SESSION, tierOf: tierOf, careerTiers: careerTiers, careerTop: careerTop, sessionBadges: sessionBadges, gameDelta: gameDelta, applyCounters: applyCounters, addPending: addPending, aiStyle: aiStyle, STYLES: STYLES };
   api.eventsSince = function (S, id) { return (S.events || []).filter(function (e) { return e.id > id; }); };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.EnTil = api;
 })(this);

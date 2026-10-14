@@ -1,5 +1,5 @@
 /* FlipX service worker — bump CACHE when shell assets change */
-const CACHE = 'flipx-v21';
+const CACHE = 'flipx-v22';
 const PRECACHE = [
   './',
   './index.html',

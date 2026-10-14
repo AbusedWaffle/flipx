@@ -25,7 +25,9 @@ let auth = null;
 function cleanBadges(b) { return Array.isArray(b) ? b.filter(k => typeof k === 'string' && /^[a-z0-9]{1,16}$/.test(k)).slice(0, 20) : []; }
 function rowOf(id, data) {
   const x = data || {};
-  return { id: id, name: String(x.name || '').trim(), games: x.games | 0, wins: x.wins | 0, badges: cleanBadges(x.badges) };
+  const r = { id: id, name: String(x.name || '').trim(), games: x.games | 0, wins: x.wins | 0 };
+  (window.EnTil.COUNTERS || []).forEach(f => { r[f] = Math.max(0, x[f] | 0); });
+  return r;
 }
 
 // Gamle kodeord-versioner gemte en nøgle her. Den slettes og bruges aldrig.
@@ -80,7 +82,7 @@ async function loadPlayers(uids) {
   if (mock) {
     list.forEach(u => {
       const p = (mock.players || []).find(x => x.id === u);
-      if (p) out[u] = { name: p.name, games: p.games | 0, wins: p.wins | 0, badges: cleanBadges(p.badges) };
+      if (p) out[u] = rowOf(u, p);
     });
     return out;
   }
@@ -89,65 +91,58 @@ async function loadPlayers(uids) {
     const snap = await getDoc(doc(db, 'players', u));
     if (snap.exists()) {
       const r = rowOf(u, snap.data());
-      out[u] = { name: r.name, games: r.games, wins: r.wins, badges: r.badges };
+      out[u] = r;
     }
   }));
   return out;
 }
 
-async function record(uid, name, won) {
+// Gem ét afsluttet spil. pend = ventende tællere (inkl. dette spil). Først skrives alt (navn, spil, sejre og tællere).
+// Afviser reglerne tællerne (før de nye regler er publiceret), skrives den gamle form (kun navn, spil, sejre) med de
+// SAMME tal, beregnet ud fra den SAMME læsning – så spil/sejre tælles aldrig dobbelt, og tællerne venter lokalt.
+async function record(uid, name, won, pend) {
   await ready;
   if (!uid || uid !== window.flipUid) throw new Error('kan kun skrive egen række');
   if (!mock && (!auth || !auth.currentUser || auth.currentUser.uid !== uid)) throw new Error('kan kun skrive egen række');
+  const E = window.EnTil;
   const prev = mock
     ? ((mock.players || []).find(p => p.id === uid) || { games: 0, wins: 0, name: '' })
     : await (async () => {
       const snap = await getDoc(doc(db, 'players', uid));
       return snap.exists() ? snap.data() : { games: 0, wins: 0, name: '' };
     })();
-  const next = window.EnTil.nextCareer(prev, !!won, name);
+  const next = E.nextCareer(prev, !!won, name);
   if (!next.name) throw new Error('tomt navn');
-  if (mock) {
-    mock.writes = mock.writes || [];
-    mock.writes.push({ uid: uid, name: next.name, games: next.games, wins: next.wins, won: !!won });
-    let row = (mock.players || []).find(p => p.id === uid);
-    if (!row) { row = { id: uid }; mock.players.push(row); }
-    row.name = next.name; row.games = next.games; row.wins = next.wins;
-    return { name: next.name, games: next.games, wins: next.wins };
+  const ap = E.applyCounters(prev, pend || {}, !!won);
+  const keep = Array.isArray(prev.badges) ? prev.badges.slice(0, 20) : null; // gammelt felt (v21) – må ikke forsvinde
+  const full = Object.assign({ name: next.name, games: next.games, wins: next.wins }, ap.counters);
+  const legacy = { name: next.name, games: next.games, wins: next.wins };
+  E.COUNTERS.forEach(f => { if (f in prev) legacy[f] = prev[f] | 0; }); // gemte tællere røres ikke
+  if (keep) { full.badges = keep; legacy.badges = keep; }
+  const write = async data => {
+    if (mock) {
+      mock.writes = mock.writes || [];
+      if (mock.legacyRules && E.COUNTERS.some(f => f in data)) { const e = new Error('permission-denied'); e.code = 'permission-denied'; throw e; }
+      mock.writes.push(Object.assign({ uid: uid, won: !!won }, data));
+      let row = (mock.players || []).find(p => p.id === uid);
+      if (!row) { row = { id: uid }; mock.players.push(row); }
+      E.COUNTERS.forEach(f => { delete row[f]; });
+      Object.assign(row, data);
+      return;
+    }
+    await setDoc(doc(db, 'players', uid), Object.assign({}, data, { updatedAt: serverTimestamp() }));
+  };
+  try {
+    await write(full);
+    return Object.assign({ legacy: false, rest: ap.rest }, full);
+  } catch (e) {
+    if (!(e && /permission/.test(String(e.code || e.message)))) throw e;
+    await write(legacy);
+    return Object.assign({ legacy: true, rest: pend || {} }, legacy);
   }
-  const keep = cleanBadges(prev.badges); // badges må ikke forsvinde, når karrieren skrives
-  const data = { name: next.name, games: next.games, wins: next.wins, updatedAt: serverTimestamp() };
-  if (keep.length) data.badges = keep;
-  await setDoc(doc(db, 'players', uid), data);
-  return { name: next.name, games: next.games, wins: next.wins };
 }
 
-// Badges: kun egen række, listen må kun vokse (Firestore-reglerne håndhæver det). Separat skrivning (merge), så
-// karrieretallene gemmes, selv om reglerne endnu ikke tillader badges (så afvises kun denne skrivning).
-async function saveBadges(uid, list) {
-  await ready;
-  if (!uid || uid !== window.flipUid) throw new Error('kan kun skrive egen række');
-  const clean = cleanBadges(list);
-  if (mock) {
-    mock.writes = mock.writes || [];
-    if (mock.badgesDenied) { const e = new Error('permission-denied'); e.code = 'permission-denied'; throw e; }
-    let row = (mock.players || []).find(p => p.id === uid);
-    if (!row) throw new Error('ingen række');
-    const merged = cleanBadges((row.badges || []).concat(clean.filter(k => (row.badges || []).indexOf(k) < 0)));
-    mock.writes.push({ uid: uid, badges: merged });
-    row.badges = merged;
-    return merged;
-  }
-  if (!auth || !auth.currentUser || auth.currentUser.uid !== uid) throw new Error('kan kun skrive egen række');
-  const snap = await getDoc(doc(db, 'players', uid));
-  if (!snap.exists()) throw new Error('ingen række');
-  const old = cleanBadges(snap.data().badges);
-  const merged = cleanBadges(old.concat(clean.filter(k => old.indexOf(k) < 0)));
-  if (merged.length === old.length) return merged;
-  await setDoc(doc(db, 'players', uid), { badges: merged, updatedAt: serverTimestamp() }, { merge: true });
-  return merged;
-}
-window.FlipLive = { ready: ready, loadBoard: loadBoard, loadPlayers: loadPlayers, record: record, saveBadges: saveBadges };
+window.FlipLive = { ready: ready, loadBoard: loadBoard, loadPlayers: loadPlayers, record: record };
 ready.then(uid => {
   if (uid) { if (window.onFlipUid) window.onFlipUid(uid); }
   else if (window.onFlipNoProfile) window.onFlipNoProfile();
