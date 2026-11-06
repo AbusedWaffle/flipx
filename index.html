@@ -401,6 +401,9 @@ body.anim-none #fx,body.anim-none .floaty,body.anim-none .flyer{display:none!imp
 #toast.cue{white-space:pre-line;line-height:1.35;border:2px solid #fff6}
 /* indstillinger */
 .gear{background:#1b2a4a;color:#cfd9ee;width:40px;height:40px;padding:0;border-radius:50%;font-size:21px;line-height:40px;flex:none}
+#guidem{position:fixed;inset:0;background:#000b;z-index:60;display:none;align-items:flex-end;justify-content:center}
+#guidem.show{display:flex}
+#guidem .sheet{max-height:85vh;overflow:auto}
 #setm{position:fixed;inset:0;background:#000b;z-index:60;display:none;align-items:flex-end;justify-content:center}
 #setm.show{display:flex}
 #setm .sheet h2{display:flex;align-items:center;justify-content:space-between}
@@ -429,6 +432,24 @@ body.anim-none #fx,body.anim-none .floaty,body.anim-none .flyer{display:none!imp
 .boardrow{align-items:flex-start}
 .boardrow .place{width:22px;font-weight:900;color:#ffcf40}
 .boardrow .stat{font-size:12px;font-weight:700;color:#c5d2ea;text-align:right;max-width:118px;line-height:1.3}
+
+/* v26: tip, guide, presets, pause, tilskuer */
+.tipban{background:#24365c;border:1px solid #ffcf4066;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:14px;line-height:1.4;display:flex;gap:10px;align-items:flex-start}
+.tipban b{color:#ffcf40}
+.tipban .tipx{margin-left:auto;background:transparent;color:#9fb0d0;padding:2px 8px;font-size:16px;flex:none}
+.presetseg{margin-bottom:4px}
+.presetseg button small{display:block;font-size:10px;font-weight:600;opacity:.75;margin-top:2px}
+.pauseban{background:#5a2330;color:#ffd0d8;border-radius:12px;padding:10px 12px;margin-bottom:8px;text-align:center;font-weight:800;font-size:15px}
+.pauseban .hint{color:#ffd0d8;font-weight:600;margin-top:4px}
+.spechelp{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#2b3d63;color:#ffcf40;font-size:11px;font-weight:900;margin-left:4px;vertical-align:middle;padding:0;line-height:1}
+.guide ol{margin:8px 0 8px 18px;padding:0;color:#c5d2ea;font-size:14px;line-height:1.45}
+.guide li{margin-bottom:6px}
+.guidecard{display:flex;gap:10px;padding:8px 0;border-top:1px solid #2b3d63;align-items:flex-start}
+.guidecard .gc{flex:none}
+.guidecard b{display:block;font-size:14px}
+.guidecard span{font-size:12px;color:#9fb0d0;line-height:1.35}
+.spectag{font-size:11px;font-weight:800;color:#ffcf40;background:#10192e;border-radius:8px;padding:2px 6px;margin-left:6px}
+.hostxfer{background:#24365c;border:1px solid #3ddc8466;border-radius:12px;padding:10px;margin-bottom:8px;text-align:center;font-weight:800;color:#3ddc84}
 </style></head><body>
 <header><h1>FLIP<span>X</span></h1><div class="pill" id="pill"><span class="dot"></span>Offline</div><button class="gear" id="gear" aria-label="Indstillinger" onclick="openSettings()">⚙</button></header>
 <main><div id="app"></div><footer class="disc" id="disc">Uofficiel fan-lavet version. Ikke tilknyttet eller godkendt af The Op / USAOPOLY. Kræver ikke det fysiske spil.</footer></main>
@@ -439,6 +460,7 @@ body.anim-none #fx,body.anim-none .floaty,body.anim-none .flyer{display:none!imp
 <div id="fx" role="status" aria-live="assertive"></div>
 <div id="setm" onclick="if(event.target===this)closeSettings()"><div class="sheet" id="setsheet"></div></div>
 <div id="badgem" onclick="if(event.target===this)closeBadges()"><div class="sheet" id="badgesheet"></div></div>
+<div id="guidem" onclick="if(event.target===this)closeGuide()"><div class="sheet guide" id="guidesheet"></div></div>
 <script src="vendor/peerjs.min.js"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="game.js"></script>
@@ -480,6 +502,7 @@ const MINUS_LIST = [['off','Fra'],['a','−2 −4 −6'],['b','−4 −6 −8'],
 let LIST = null, joinJc = String(qs.get('jc') || '').replace(/\D/g, '').slice(0, 4), lobbyHb = null, lobbyGone = {};
 let role = null, room = null, peer = null, S = null, view = null, conns = {}, hostConn = null;
 let connState = 'offline', errMsg = '', myName = LS.get('name', ''), rejected = false, lastMsg = 0, reconnTimer = null, freshHost = false;
+let backupS = null, takeoverT = null, takeoverBusy = false, iAmSpectator = false, hostXferMsg = '', tipLine = '';
 let lastSeq = null, wasMyTurn = false, sending = false, lastEv = null, gvNum = null;
 // Valg i gitteret: første tryk markerer målet (vises live hos alle), tryk igen på samme brik bekræfter.
 let gridSel = null, gridKey = null;
@@ -651,20 +674,36 @@ function onHostData(c, d) {
   if (d.t === 'hello') {
     const pid = String(d.pid || '').slice(0, 40), name = String(d.name || 'Spiller').trim().slice(0, 16) || 'Spiller';
     if (!pid) return;
+    if (!Array.isArray(S.spectators)) S.spectators = [];
     let p = S.players.find(x => x.id === pid);
-    if (!p) {
-      if (S.phase !== 'lobby') { send(c, { t: 'reject', reason: 'Spillet er allerede i gang. Vent til værten starter et nyt spil.' }); return setTimeout(() => c.close(), 800); }
-      if (S.players.length >= 8) { send(c, { t: 'reject', reason: 'Spillet er fuldt (max 8 spillere).' }); return setTimeout(() => c.close(), 800); }
+    let sp = S.spectators.find(x => x.id === pid);
+    if (!p && !sp) {
       if (LIST && LIST.room === room && LIST.code && String(d.jc || '') !== LIST.code) { c.badJc = (c.badJc | 0) + 1; send(c, { t: 'needcode', wrong: !!d.jc }); return setTimeout(() => c.close(), 800); }
-      p = G.addPlayer(S, pid, name); S.seq++; S.log.push({ n: S.seq, txt: name + ' er med', kind: 'info' });
-    } else {
+      if (S.phase === 'lobby') {
+        if (S.players.length >= 8) { send(c, { t: 'reject', reason: 'Spillet er fuldt (max 8 spillere).' }); return setTimeout(() => c.close(), 800); }
+        p = G.addPlayer(S, pid, name); S.seq++; S.log.push({ n: S.seq, txt: name + ' er med', kind: 'info' });
+      } else if (S.phase === 'play' || S.phase === 'roundEnd' || S.phase === 'over') {
+        if (S.spectators.length >= 8) { send(c, { t: 'reject', reason: 'For mange tilskuere lige nu.' }); return setTimeout(() => c.close(), 800); }
+        sp = { id: pid, name: name, online: true, joinNext: false }; S.spectators.push(sp);
+        S.seq++; S.log.push({ n: S.seq, txt: name + ' kigger med', kind: 'info' });
+      } else {
+        send(c, { t: 'reject', reason: 'Spillet er allerede i gang. Vent til værten starter et nyt spil.' }); return setTimeout(() => c.close(), 800);
+      }
+    } else if (p) {
       if (S.phase === 'lobby') p.name = name;
       if (!p.online) { S.seq++; S.log.push({ n: S.seq, txt: p.name + ' er tilbage', kind: 'info' }); }
+    } else if (sp) {
+      sp.name = name; sp.online = true;
     }
-    const old = conns[pid]; conns[pid] = c; c.pid = pid; p.online = true;
+    const old = conns[pid]; conns[pid] = c; c.pid = pid;
+    if (p) p.online = true;
+    if (sp) sp.online = true;
     if (old && old !== c) try { old.close(); } catch (e) {}
-    setFuid(p, d.uid);
+    setFuid(p || sp, d.uid);
     publish();
+  } else if (d.t === 'joinNext' && c.pid && conns[c.pid] === c) {
+    const sp = (S.spectators || []).find(x => x.id === c.pid);
+    if (sp) { sp.joinNext = !!d.on; publish(); }
   } else if (d.t === 'rematch' && c.pid && conns[c.pid] === c) {
     hostRematchVote(c.pid, !!d.on);
   } else if (d.t === 'next' && c.pid && conns[c.pid] === c) {
@@ -679,6 +718,8 @@ function onHostData(c, d) {
     else { if (P.options.indexOf(d.target) < 0) return; P.mark = { t: d.target, n: typeof d.num === 'number' ? d.num : null }; }
     publish();
   } else if (d.t === 'intent' && c.pid && conns[c.pid] === c) {
+    if ((S.spectators || []).some(x => x.id === c.pid)) { send(c, { t: 'err', msg: 'Du er tilskuer' }); return; }
+    if (S.paused) { send(c, { t: 'err', msg: 'Spillet er sat på pause' }); return; }
     const r = G.act(S, c.pid, { a: d.a, target: d.target, num: d.num });
     if (!r.ok) send(c, { t: 'err', msg: r.err });
     publish();
@@ -688,15 +729,20 @@ function onHostClose(c) {
   if (!c.pid || conns[c.pid] !== c) return;
   delete conns[c.pid];
   const p = S.players.find(x => x.id === c.pid);
+  const sp = (S.spectators || []).find(x => x.id === c.pid);
   if (p) { p.online = false; S.seq++; S.log.push({ n: S.seq, txt: p.name + ' mistede forbindelsen', kind: 'info' }); }
+  else if (sp) { sp.online = false; }
   publish();
 }
 function publish() {
   if (S && S.phase && S.phase !== 'lobby' && !S.pace) S.pace = true; // tempo: værten holder pause efter specialkort
+  if (S && !Array.isArray(S.spectators)) S.spectators = [];
   saveHost();
   const v = G.publicView(S);
-  Object.values(conns).forEach(c => send(c, { t: 'state', s: v }));
-  view = v; render();
+  // fuld tilstand til failover (klienter gemmer backupS). Talkort-rækkefølge synlig ved cheating – acceptabelt blandt venner.
+  const full = JSON.parse(JSON.stringify(S));
+  Object.values(conns).forEach(c => { send(c, { t: 'state', s: v }); send(c, { t: 'backup', s: full }); });
+  view = v; backupS = full; render();
   if (LIST && LIST.listed) lobbySync(true);
   pace();
 }
@@ -726,11 +772,11 @@ function holdMs(st) {
 }
 let paceT = null, paceKey = null;
 function pace() {
-  if (role !== 'host' || !S || !S.hold) { if (paceT) { clearTimeout(paceT); paceT = null; paceKey = null; } return; }
+  if (role !== 'host' || !S || !S.hold || S.paused) { if (paceT) { clearTimeout(paceT); paceT = null; paceKey = null; } return; }
   const key = S.hold.k + ':' + S.hold.from + ':' + (S.evSeq || 0);
   if (paceT && paceKey === key) return;
   clearTimeout(paceT); paceKey = key;
-  paceT = setTimeout(() => { paceT = null; paceKey = null; if (role === 'host' && S && S.hold) { G.resume(S); publish(); } }, holdMs(S));
+  paceT = setTimeout(() => { paceT = null; paceKey = null; if (role === 'host' && S && S.hold && !S.paused) { G.resume(S); publish(); } }, holdMs(S));
 }
 setInterval(() => {
   if (role !== 'host') return;
@@ -738,6 +784,8 @@ setInterval(() => {
   Object.values(conns).forEach(c => { if (now - c.last > 12000) { try { c.close(); } catch (e) {} onHostClose(c); } else send(c, { t: 'ping' }); });
 }, 3000);
 function hostAct(a) {
+  if (iAmSpectator) return toast('Du er tilskuer');
+  if ((role === 'host' ? S : view) && (role === 'host' ? S : view).paused) return toast('Spillet er sat på pause');
   if (role === 'host') { const r = G.act(S, myId, a); if (!r.ok) toast(r.err); publish(); }
   else { if (!hostConn || !hostConn.open) return toast('Ingen forbindelse til værten'); send(hostConn, { t: 'intent', a: a.a, target: a.target, num: a.num }); sending = true; render(); }
 }
@@ -784,7 +832,24 @@ function scheduleAi() {
     hostActFor(now.pid, { a: now.a, target: now.target, num: now.num });
   }, 600 + Math.floor(Math.random() * 601));
 }
-function hostNext() { if (role !== 'host' || !S || S.phase !== 'roundEnd') return; G.nextRound(S); publish(); }
+function hostNext() {
+  if (role !== 'host' || !S || S.phase !== 'roundEnd') return;
+  G.promoteSpectators(S);
+  G.nextRound(S); publish();
+}
+function hostPause(on) {
+  if (role !== 'host' || !S || S.phase !== 'play') return;
+  S.paused = !!on;
+  if (S.paused) { S.seq++; S.log.push({ n: S.seq, txt: 'Værten satte spillet på pause', kind: 'info' }); }
+  else { S.seq++; S.log.push({ n: S.seq, txt: 'Spillet fortsætter', kind: 'info' }); }
+  publish();
+}
+function hostPreset(key) {
+  if (role !== 'host' || !S || S.phase !== 'lobby') return;
+  const r = G.applyPreset(S, key); if (!r.ok) return;
+  if (G.PRESETS[key] && G.PRESETS[key].target) { const el = $('target'); if (el) el.value = S.target; }
+  publish();
+}
 function requestNext() {
   if (role === 'host') return hostNext();
   if (!view || !view.anyNext || view.phase !== 'roundEnd') return;
@@ -802,15 +867,26 @@ function hostRematchVote(pid, on) {
 }
 function hostRematchNow() {
   if (role !== 'host' || !S || S.phase !== 'over') return;
-  stopAi(); const r = G.rematch(S); if (!r.ok) toast(r.err); publish();
+  stopAi(); G.promoteSpectators(S); const r = G.rematch(S); if (!r.ok) toast(r.err); publish();
 }
 function voteRematch() {
   const on = !(view && view.rematch && view.rematch[myId]);
   if (role === 'host') hostRematchVote(myId, on);
   else if (hostConn && hostConn.open) send(hostConn, { t: 'rematch', on });
 }
-function hostNewGame() { G.backToLobby(S); G.renameAi(S); publish(); }
-function hostKick(pid) { const i = S.players.findIndex(p => p.id === pid); if (i <= 0 || S.phase !== 'lobby') return; const c = conns[pid]; if (c) { send(c, { t: 'reject', reason: 'Værten fjernede dig fra spillet.' }); delete conns[pid]; setTimeout(() => c.close(), 500); } S.players.splice(i, 1); publish(); }
+function hostNewGame() { G.promoteSpectators(S); G.backToLobby(S); G.renameAi(S); publish(); }
+function hostKick(pid) {
+  const i = S.players.findIndex(p => p.id === pid);
+  if (i > 0 && S.phase === 'lobby') {
+    const c = conns[pid]; if (c) { send(c, { t: 'reject', reason: 'Værten fjernede dig fra spillet.' }); delete conns[pid]; setTimeout(() => c.close(), 500); }
+    S.players.splice(i, 1); publish(); return;
+  }
+  const si = (S.spectators || []).findIndex(p => p.id === pid);
+  if (si >= 0) {
+    const c = conns[pid]; if (c) { send(c, { t: 'reject', reason: 'Værten fjernede dig.' }); delete conns[pid]; setTimeout(() => c.close(), 500); }
+    S.spectators.splice(si, 1); publish();
+  }
+}
 function hostTarget(v) { const t = parseInt(v, 10); if (t > 0 && S.phase === 'lobby') { S.target = t; publish(); } }
 function hostDeck(n) { n = +n; if (role !== 'host' || !S || S.phase !== 'lobby' || [8,12,16].indexOf(n) < 0) return; S.deckMax = n; publish(); }
 function hostMinus(k) { if (role !== 'host' || !S || S.phase !== 'lobby' || ['off','a','b','c'].indexOf(k) < 0) return; S.minus = k; publish(); }
@@ -852,26 +928,81 @@ function connectToHost() {
   const to = setTimeout(() => { if (hostConn === c && !c.open) { hostConn = null; try { c.close(); } catch (e) {} connState = 'lost'; if (!errMsg) errMsg = 'Kan ikke nå værten. Prøver igen…'; render(); scheduleReconnect(); } }, 9000);
   c.on('open', () => { if (hostConn !== c) return; clearTimeout(to); connState = 'online'; errMsg = ''; lastMsg = Date.now(); send(c, { t: 'hello', pid: myId, name: myName, uid: window.flipUid || '', jc: joinJc }); render(); });
   c.on('data', d => { if (hostConn === c) onClientData(d); });
-  const lost = () => { if (hostConn !== c) return; clearTimeout(to); hostConn = null; if (rejected) return; connState = 'lost'; errMsg = errMsg || 'Forbindelsen til værten er tabt. Prøver igen…'; render(); scheduleReconnect(); };
+  const lost = () => { if (hostConn !== c) return; clearTimeout(to); hostConn = null; if (rejected) return; connState = 'lost'; errMsg = errMsg || 'Forbindelsen til værten er tabt. Prøver igen…'; render(); scheduleReconnect(); scheduleTakeover(); };
   c.on('close', lost); c.on('error', lost);
 }
 function scheduleReconnect(ms) {
-  if (reconnTimer || rejected || role !== 'client') return;
-  reconnTimer = setTimeout(() => { reconnTimer = null; if (!peer || peer.destroyed) startClientPeer(); else if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} setTimeout(() => peer && peer.open && connectToHost(), 1500); } else connectToHost(); }, ms || 2500);
+  if (reconnTimer || rejected || role !== 'client' || takeoverBusy) return;
+  reconnTimer = setTimeout(() => { reconnTimer = null; if (takeoverBusy || role !== 'client') return; if (!peer || peer.destroyed) startClientPeer(); else if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} setTimeout(() => peer && peer.open && connectToHost(), 1500); } else connectToHost(); }, ms || 2500);
 }
 function onClientData(d) {
   if (!d || typeof d !== 'object') return;
   lastMsg = Date.now();
-  if (d.t === 'state') { view = d.s; sending = false; render(); }
-  else if (d.t === 'ping') send(hostConn, { t: 'pong' });
+  if (d.t === 'state') {
+    view = d.s; sending = false;
+    iAmSpectator = !!(view.spectators || []).some(x => x.id === myId) && !(view.players || []).some(x => x.id === myId);
+    if (connState === 'online') { clearTimeout(takeoverT); takeoverT = null; }
+    render();
+  } else if (d.t === 'backup') {
+    backupS = d.s;
+  } else if (d.t === 'ping') send(hostConn, { t: 'pong' });
   else if (d.t === 'err') { sending = false; toast(d.msg); render(); }
   else if (d.t === 'needcode') { rejected = true; connState = 'offline'; errMsg = ''; askCode(room, myName, !!d.wrong); }
-  else if (d.t === 'reject') { rejected = true; errMsg = d.reason; LS.del('session'); connState = 'offline'; view = null; render(); }
+  else if (d.t === 'reject') { rejected = true; errMsg = d.reason; LS.del('session'); connState = 'offline'; view = null; backupS = null; render(); }
+}
+// Host-transfer: når værten er væk, forsøger første tilbageværende menneske (efter index) at overtage Peer-id flipx-{rum}.
+// Begrænsning: kræver at klienten har modtaget backupS; Peer-id kan være optaget et stykke tid; gammel vært der kommer tilbage kan kæmpe om id'et.
+function scheduleTakeover() {
+  if (role !== 'client' || rejected || takeoverBusy || !backupS || !room) return;
+  clearTimeout(takeoverT);
+  const idx = (backupS.players || []).findIndex(p => p.id === myId && !p.ai);
+  if (idx < 1) return; // index 0 var værten; tilskuere overtager ikke
+  const delay = 3500 + idx * 2500;
+  takeoverT = setTimeout(() => { takeoverT = null; tryTakeover(); }, delay);
+}
+function tryTakeover() {
+  if (role !== 'client' || rejected || takeoverBusy || !backupS || connState === 'online') return;
+  const idx = (backupS.players || []).findIndex(p => p.id === myId && !p.ai);
+  if (idx < 1) return;
+  takeoverBusy = true;
+  clearTimeout(reconnTimer); reconnTimer = null;
+  try { if (hostConn) hostConn.close(); } catch (e) {}
+  hostConn = null;
+  try { if (peer) peer.destroy(); } catch (e) {}
+  peer = null;
+  S = JSON.parse(JSON.stringify(backupS));
+  const r = G.transferHost(S, myId);
+  if (!r.ok) { takeoverBusy = false; scheduleReconnect(1000); return; }
+  // markér gamle peers offline undtagen mig
+  S.players.forEach(p => { p.online = p.id === myId; });
+  (S.spectators || []).forEach(sp => { sp.online = false; });
+  role = 'host'; freshHost = false; iAmSpectator = false;
+  hostXferMsg = S.players[0].name + ' er nu vært';
+  LIST = LS.get('list-' + room, null);
+  LS.set('session', { room, role: 'host' });
+  saveHost();
+  connState = 'connecting'; errMsg = '';
+  startHostPeer();
+  // når peer er klar, publish (startHostPeer open-handler kalder publish via lobby – vi force publish efter kort vent)
+  const waitOpen = setInterval(() => {
+    if (role !== 'host') { clearInterval(waitOpen); takeoverBusy = false; return; }
+    if (peer && peer.open) { clearInterval(waitOpen); takeoverBusy = false; publish(); toast(hostXferMsg, '', 4000); setTimeout(() => { hostXferMsg = ''; if (role === 'host') render(); }, 6000); }
+  }, 200);
+  setTimeout(() => { clearInterval(waitOpen); if (takeoverBusy) { takeoverBusy = false; if (role === 'host') publish(); } }, 12000);
+}
+function requestJoinNext(on) {
+  if (role === 'host') {
+    const sp = (S.spectators || []).find(x => x.id === myId);
+    if (sp) { sp.joinNext = !!on; publish(); }
+    return;
+  }
+  if (!hostConn || !hostConn.open) return toast('Ingen forbindelse til værten');
+  send(hostConn, { t: 'joinNext', on: !!on });
 }
 setInterval(() => {
   if (role === 'client' && connState === 'online' && Date.now() - lastMsg > 10000) {
     const c = hostConn; hostConn = null; try { c && c.close(); } catch (e) {}
-    connState = 'lost'; errMsg = 'Intet svar fra værten. Prøver igen…'; render(); scheduleReconnect(500);
+    connState = 'lost'; errMsg = 'Intet svar fra værten. Prøver igen…'; render(); scheduleReconnect(500); scheduleTakeover();
   }
 }, 2000);
 document.addEventListener('visibilitychange', () => {
@@ -1218,6 +1349,18 @@ function paintSay() {
 // Kun sejren vises i fuld skærm.
 function playEvents(fresh, v) {
   const meIdx = v.players.findIndex(p => p.id === myId);
+  // Første-gangs tip ved auto-specialkort på dig (et/h2/pa)
+  fresh.forEach(e => {
+    if (e.p !== meIdx) return;
+    let ck = null;
+    if (e.type === 'extra') ck = 'et';
+    else if (e.type === 'pause') ck = 'pa';
+    else if (e.type === 'half' && (e.card === 'h2' || e.p === e.t)) ck = 'h2';
+    else if (e.type === 'card' && (e.card === 'et' || e.card === 'h2' || e.card === 'pa')) ck = e.card;
+    if (!ck) return;
+    const tip = specialTipFor(ck);
+    if (tip) { markSpecialTip(ck); toast(CARD_NAME[ck] + ': ' + tip, '', 4200); }
+  });
   if (SET.anim === 'none') {
     const big = fresh.map((e, k) => [e, k]).filter(([e]) => FX_BIG[e.type]);
     if (!big.length) return;
@@ -1295,10 +1438,11 @@ function riskChip(v, i) {
 function statusChip(p) { return p.seven ? '<span class="status st-seven">SYV!</span>' : `<span class="status st-${p.status}">${STATUS[p.status]}</span>`; }
 function me() { return view && view.players.find(p => p.id === myId); }
 function isMyTurn(v) {
-  if (!v || v.phase !== 'play') return false;
+  if (!v || v.phase !== 'play' || v.paused || iAmSpectator) return false;
   const i = v.players.findIndex(p => p.id === myId);
+  if (i < 0) return false;
   if (v.pending) return v.pending.chooser === i;
-  return v.stage === 'turns' && v.turn === i;
+  return v.stage === 'turns' && v.turn === i && !v.hold;
 }
 function setPill() {
   const map = { online: ['on', role === 'host' ? 'Vært · online' : 'Forbundet'], connecting: ['wait', 'Forbinder…'], lost: ['off', 'Afbrudt'], offline: ['', 'Offline'] };
@@ -1372,6 +1516,47 @@ function render() {
   gateModal();
   scheduleAi();
 }
+
+// ---------- guide / tips (v26) ----------
+function openGuide() {
+  const cards = SPEC_LIST.map(([k, n]) => `<div class="guidecard"><span class="gc">${cardHtml(k)}</span><div><b>${esc(n)}</b><span>${esc(CARD_DESC[k] || '')}</span></div></div>`).join('');
+  $('guidesheet').innerHTML = `<h2>Sådan spiller du <button class="x" onclick="closeGuide()" aria-label="Luk">✕</button></h2>
+    <div class="hint">FlipX er et kortspil: træk kort, byg din hånd – men gå ikke bust.</div>
+    <ol>
+      <li><b>Mål:</b> Først til det antal point værten har sat (fx 200).</li>
+      <li><b>Din tur:</b> Træk et kort, eller stop for at banke rundens point.</li>
+      <li><b>Talkort:</b> 0–N. Du må kun have ét af hvert tal. Trækker du et tal du har, går du <b>bust</b> (0 i runden) – medmindre 2. chance redder dig.</li>
+      <li><b>Flip 7:</b> 7 forskellige talkort i runden = +15 og runden slutter med det samme.</li>
+      <li><b>Stop:</b> Banker dine point. Du er ude af runden, men beholder dem.</li>
+      <li><b>Specialkort:</b> Frys, Træk 3, 2. chance m.fl. – se listen herunder. Værten vælger hvilke der er med.</li>
+    </ol>
+    <div class="lbl">Specialkort</div>${cards}
+    <button class="primary" style="margin-top:12px" onclick="closeGuide()">Forstået</button>`;
+  $('guidem').classList.add('show');
+}
+function closeGuide() { $('guidem').classList.remove('show'); }
+function dismissRecTip() { LS.set('recTipSeen', 1); render(); }
+function recTipHtml() {
+  if (LS.get('recTipSeen', 0)) return '';
+  if (!LS.get('recTipReady', 0)) return '';
+  return `<div class="tipban" id="recTip"><div><b>Gem din gendannelseskode</b><div class="hint" style="margin:4px 0 0;color:#c5d2ea">Åbn ⚙ øverst til højre → «Vis min gendannelseskode». Skriv den ned. Så kan du hente sejre og badges igen, hvis du rydder browserdata.</div></div><button class="tipx" onclick="dismissRecTip()" aria-label="Luk">✕</button></div>`;
+}
+function maybeArmRecTip() {
+  if (LS.get('recTipSeen', 0) || LS.get('recTipReady', 0)) return;
+  LS.set('recTipReady', 1);
+}
+function specialTipFor(card) {
+  const seen = LS.get('seenTips', {}) || {};
+  if (!card || seen[card]) return '';
+  return CARD_DESC[card] || '';
+}
+function markSpecialTip(card) {
+  if (!card) return;
+  const seen = LS.get('seenTips', {}) || {};
+  if (seen[card]) return;
+  seen[card] = 1; LS.set('seenTips', seen);
+}
+
 function renderConnecting() {
   $('bottom').style.display = 'none'; $('modal').classList.remove('show');
   $('app').innerHTML = `<div class="card" style="text-align:center;margin-top:30px"><div class="spin"></div><h2 style="margin:0 0 6px">Forbinder til spil ${esc(room)}…</h2>${errMsg ? `<div class="err" style="margin-top:12px">${esc(errMsg)}</div>` : ''}<button class="ghost" onclick="leave()">Annuller</button></div>`;
@@ -1382,8 +1567,10 @@ function renderHome() {
   const sess = LS.get('session', null);
   let h = '';
   if (errMsg && rejected) h += `<div class="err">${esc(errMsg)}</div>`;
-  h += `<div class="card" id="nameCard"><div class="lbl" style="margin-top:0">Dit navn</div><input type="text" id="name" maxlength="16" autocomplete="off" placeholder="Fx Emil" value="${esc(myName)}">${nameErrHtml()}<div class="hint" id="deviceHint">Dine tal gemmes på denne enhed. Navnet kan skiftes til hvert spil.</div></div>`;
+  h += recTipHtml();
+  h += `<div class="card" id="nameCard"><div class="lbl" style="margin-top:0">Dit navn</div><input type="text" id="name" maxlength="16" autocomplete="off" placeholder="Fx Emil" value="${esc(myName)}">${nameErrHtml()}<div class="hint" id="deviceHint">Navne er unikke på ranglisten. Skriv dit navn her før du opretter eller deltager – det følger din profil (sejre, badges). Har du allerede et gemt navn på serveren, overstyrer det telefonens. Skift navn her; er det taget, vælger du et andet. Profilen følger dig via gendannelseskode under ⚙ – ikke kun denne telefon.</div></div>`;
   { const c = dispCareer(window.flipUid), T = G.careerTiers(c); h += `<button class="primary badgesbtn" id="btnBadges" onclick="openBadges()">🏅 Præstationer <small>· ${T.filter(x => x.tier >= 0).length}/${T.length} badges · ${T.reduce((a, x) => a + x.tier + 1, 0)}/${T.length * 4} trin</small></button>`; }
+  h += `<button class="ghost" id="btnGuide" style="width:100%;margin-bottom:12px" onclick="openGuide()">❓ Sådan spiller du</button>`;
   h += boardHtml();
   const join = `<div class="card"><h3 style="margin:0 0 4px">${qroom ? 'Deltag i spil' : 'Deltag i et spil'}</h3><div class="lbl">Spilkode</div><input type="text" id="code" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="ABCDE" value="${esc(qroom)}"><button class="primary" id="btnJoin" style="margin-top:12px" onclick="doJoin()">Deltag</button></div>`;
   const create = `<div class="card"><h3 style="margin:0 0 4px">Opret nyt spil</h3><div class="hint">Din telefon bliver vært. Hold den tændt og med appen åben under spillet.</div><div class="lbl">Spil til (point)</div><input type="number" id="tgt" inputmode="numeric" value="200"><label class="tgl"><input type="checkbox" id="visList" ${LS.get('visList', true) ? 'checked' : ''} onchange="$('codeRow').style.display=this.checked?'':'none'"> Vis i listen over åbne spil</label><label class="tgl" id="codeRow" style="${LS.get('visList', true) ? '' : 'display:none'}"><input type="checkbox" id="needCode" ${LS.get('needCode', false) ? 'checked' : ''}> Kræv kode (4 cifre) for at deltage</label><button class="primary" id="btnCreate" style="margin-top:12px" onclick="doCreate()">Opret spil</button></div>`;
@@ -1478,13 +1665,21 @@ function renderLobby() {
   if (errMsg) h += `<div class="err">${esc(errMsg)}</div>`;
   h += `<div class="card" style="text-align:center"><div class="hint">${host ? 'Lad de andre scanne koden eller skrive spilkoden' : 'Du er med! Venter på at værten starter spillet…'}</div><div class="roomcode" id="roomcode">${esc(room)}</div><div class="qr">${qr}</div><div class="link">${esc(link)}</div>${host && LIST && LIST.room === room && LIST.listed ? `<div class="hint" id="listInfo" style="margin-top:8px">📋 Vises i Åbne spil${LIST.code ? '' : ' for alle'}</div>` : ''}${host && LIST && LIST.room === room && LIST.code ? `<div class="hint" style="margin-top:6px">Kode til at deltage</div><div class="roomcode" id="joinCode" style="letter-spacing:10px">${esc(LIST.code)}</div>` : ''}${host && navigator.share ? `<button class="ghost" style="margin-top:10px" onclick="navigator.share({title:'FlipX',text:'Spil FlipX med mig',url:'${esc(link)}'}).catch(()=>{})">Del link</button>` : ''}</div>`;
   h += `<div class="card"><div class="lbl" style="margin-top:0">Spillere (${v.players.length}/8)</div><div class="plist">` + v.players.map((p, i) => `<div class="pl"><span class="dot ${p.online ? 'on' : 'off'}"></span><span class="grow">${esc(p.name)}${p.id === myId ? ' (dig)' : ''}${i === 0 ? ' 👑' : ''}${p.ai && p.style ? ` <span class="aistyle">${AI_STYLE_TXT[p.style]}</span>` : ''}</span>${host && i > 0 && !p.ai ? `<button class="x" onclick="hostKick('${esc(p.id)}')">✕</button>` : ''}</div>`).join('') + '</div>';
+  const specs = v.spectators || [];
+  if (specs.length) h += `<div class="lbl">Tilskuere</div><div class="plist">` + specs.map(p => `<div class="pl"><span class="dot ${p.online ? 'on' : 'off'}"></span><span class="grow">${esc(p.name)}${p.id === myId ? ' (dig)' : ''}<span class="spectag">kigger</span>${p.joinNext ? ' · med næste runde' : ''}</span>${host ? `<button class="x" onclick="hostKick('${esc(p.id)}')">✕</button>` : ''}</div>`).join('') + '</div>';
   const sp = v.specials || { fr: true, f3: true, sc: true, et: false, gv: false, pa: false };
   const max = v.deckMax || 12;
   const onNames = SPEC_LIST.filter(([k]) => sp[k]).map(([, n]) => n).join(', ') || 'ingen';
   const ch = v.chance === 'low' || v.chance === 'high' ? v.chance : 'std';
+  const activePreset = G.matchPreset(v);
+  if (host) {
+    h += `<div class="lbl">Forudindstilling</div><div class="seg deck presetseg" id="presetSeg">${[['classic','Klassisk','Standard'],['kaos','Kaos','Alt tændt'],['hurtig','Hurtig','0–8 · 100']].map(([k, n, s]) => `<button type="button" data-preset="${k}" class="${activePreset === k ? 'on' : ''}" onclick="hostPreset('${k}')">${n}<small>${s}</small></button>`).join('')}</div><div class="hint" id="presetHint">Ét tryk sætter bunke, chance, specialkort, minus, risiko og «alle kan starte». Du kan justere manuelt bagefter.</div>`;
+  } else if (activePreset) {
+    h += `<div class="hint" id="presetHint">Forudindstilling: ${activePreset === 'classic' ? 'Klassisk' : activePreset === 'kaos' ? 'Kaos' : 'Hurtig'}.</div>`;
+  }
   h += `<div class="lbl">Talkort</div><div class="seg deck" id="deckSeg">${[8,12,16].map(n => `<button type="button" data-deck="${n}" class="${max === n ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostDeck(${n})">0–${n}</button>`).join('')}</div>`;
   h += `<div class="lbl">Chance for specialkort</div><div class="seg deck" id="chanceSeg">${[['low','Lille'],['std','Standard'],['high','Høj']].map(([k, n]) => `<button type="button" data-chance="${k}" class="${ch === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostChance('${k}')">${n}</button>`).join('')}</div>`;
-  h += `<div class="lbl">Specialkort</div><div class="specs" id="specList">${SPEC_LIST.map(([k, n]) => `<button type="button" data-spec="${k}" class="${sp[k] ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostSpec('${k}')">${n}</button>`).join('')}</div>`;
+  h += `<div class="lbl">Specialkort <button type="button" class="spechelp" title="Forklaringer" onclick="openGuide()">?</button></div><div class="specs" id="specList">${SPEC_LIST.map(([k, n]) => `<button type="button" data-spec="${k}" class="${sp[k] ? 'on' : ''}" title="${esc(CARD_DESC[k] || '')}" ${host ? '' : 'disabled'} onclick="hostSpec('${k}')">${n}</button>`).join('')}</div>`;
   const mi = ['a','b','c'].indexOf(v.minus) >= 0 ? v.minus : 'off', mch = v.minusChance === 'low' || v.minusChance === 'high' ? v.minusChance : 'std';
   h += `<div class="lbl">Minuskort</div><div class="seg deck minus" id="minusSeg">${MINUS_LIST.map(([k, n]) => `<button type="button" data-minus="${k}" class="${mi === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostMinus('${k}')">${n}</button>`).join('')}</div>`;
   if (mi !== 'off') h += `<div class="lbl">Chance for minuskort</div><div class="seg deck" id="minusChanceSeg">${[['low','Lille'],['std','Standard'],['high','Høj']].map(([k, n]) => `<button type="button" data-mchance="${k}" class="${mch === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostMinusChance('${k}')">${n}</button>`).join('')}</div>`;
@@ -1498,7 +1693,7 @@ function renderLobby() {
   if (host) h += `<div class="lbl">Modstandere (AI)</div><div class="seg deck ai" id="aiSeg">${[0,1,2,3,4,5,6,7].map(n => `<button type="button" data-ai="${n}" class="${aiN === n ? 'on' : ''}" ${n > maxAi ? 'disabled' : ''} onclick="hostAi(${n})">${n}</button>`).join('')}</div><div class="hint" id="aiHint">${aiN ? 'Computeren spiller med på denne telefon. Ingen andre skal joine.' : '0 = almindeligt spil, hvor andre telefoner joiner.'}</div>`;
   if (host) h += `<div class="lbl">Spil til (point)</div><input type="number" id="target" inputmode="numeric" value="${v.target}" onchange="hostTarget(this.value)"><button class="primary" id="btnStart" style="margin-top:14px;height:60px;font-size:20px" onclick="hostStart()" ${v.players.length < 2 ? 'disabled' : ''}>${v.players.length < 2 ? 'Venter på spillere…' : `Start spil (${v.players.length} spillere)`}</button>`;
   else h += `<div class="hint">Der spilles til ${v.target} point. Værten vælger bunke og specialkort.</div>`;
-  h += `</div><button class="ghost" style="width:100%" onclick="leave()">${host ? 'Afslut spil' : 'Forlad spil'}</button>`;
+  h += `</div><button class="ghost" style="width:100%;margin-bottom:8px" onclick="openGuide()">❓ Sådan spiller du</button><button class="ghost" style="width:100%" onclick="leave()">${host ? 'Afslut spil' : 'Forlad spil'}</button>`;
   keepInput(() => { $('app').innerHTML = h; });
 }
 
@@ -1511,9 +1706,16 @@ function renderGame() {
   if (myTurn && !wasMyTurn) { buzz([200, 100, 200]); beep(); keepAwake(); syncTurnVibe(); }
   if (!myTurn) stopTurnVibe();
   wasMyTurn = myTurn;
-  let h = `<div class="subrow"><div class="sub" id="roundline">Runde ${v.round} · Spil til ${v.target} · Bunke: ${v.deckCount} kort</div><button class="leave" onclick="leave()">${role === 'host' ? 'Afslut' : 'Forlad'}</button></div>`;
+  iAmSpectator = !!(v.spectators || []).some(x => x.id === myId) && !(v.players || []).some(x => x.id === myId);
+  let h = '';
+  if (hostXferMsg) h += `<div class="hostxfer" id="hostXfer">${esc(hostXferMsg)}</div>`;
+  if (v.paused && v.phase === 'play') h += `<div class="pauseban" id="pauseBan">⏸ Venter på værten…<div class="hint">Spillet er sat på pause</div></div>`;
+  if (iAmSpectator) h += `<div class="tipban" id="specBan"><div><b>Du kigger med</b><div class="hint" style="margin:4px 0 0;color:#c5d2ea">Du ser brættet, men har ingen ture. Ved rundeslut kan du vælge at spille med fra næste runde.</div></div></div>`;
+  h += `<div class="subrow"><div class="sub" id="roundline">Runde ${v.round} · Spil til ${v.target} · Bunke: ${v.deckCount} kort</div>`;
+  if (role === 'host' && v.phase === 'play') h += `<button class="leave" id="btnPause" onclick="hostPause(${v.paused ? 'false' : 'true'})">${v.paused ? 'Fortsæt' : 'Sæt spillet på pause'}</button>`;
+  h += `<button class="leave" onclick="leave()">${role === 'host' ? 'Afslut' : 'Forlad'}</button></div>`;
   // værts-hjælp for offline spillere
-  if (role === 'host' && v.phase === 'play') {
+  if (role === 'host' && v.phase === 'play' && !v.paused) {
     const actor = v.pending ? v.pending.chooser : (v.stage === 'turns' ? v.turn : -1);
     const ap = actor >= 0 && v.players[actor];
     if (ap && !ap.online && !ap.ai && ap.id !== myId) {
@@ -1566,28 +1768,38 @@ function renderGame() {
   applyDupFx(); paintSay();
   keepFx.forEach(([pi, el]) => { const r = fxRow(pi); if (r) { el.style.setProperty('--el', -(Date.now() - (+el.dataset.t0 || Date.now())) + 'ms'); r.appendChild(el); } });
   // knapper
-  const canAct = v.phase === 'play' && !v.pending && !v.hold && v.stage === 'turns' && v.turn === meIdx && !sending;
+  const canAct = v.phase === 'play' && !v.paused && !iAmSpectator && !v.pending && !v.hold && v.stage === 'turns' && v.turn === meIdx && !sending;
   const b = $('bottom'); b.style.display = v.phase === 'play' ? 'flex' : 'none';
   b.className = 'bottom' + (canAct ? ' go' : '');
   const nmOf = i => { const p = v.players[i]; return i === meIdx ? 'dig' : esc(p.ai ? String(p.name).replace(/ \(AI\)$/, '') : p.name); };
-  if (PK) {
+  if (v.paused && v.phase === 'play') {
+    b.className = 'bottom waitbar';
+    b.innerHTML = role === 'host'
+      ? `<button class="primary" id="btnResume" style="height:56px;font-size:18px" onclick="hostPause(false)">Fortsæt spillet</button>`
+      : `<div class="wtxt"><div id="waitLine"><b>Venter på værten…</b></div><div class="hint">Spillet er sat på pause</div></div>`;
+  } else if (iAmSpectator && v.phase === 'play') {
+    b.className = 'bottom waitbar';
+    b.innerHTML = `<div class="wtxt"><div id="waitLine"><b>Tilskuer</b> – du har ingen ture</div></div>`;
+  } else if (PK) {
     b.className = 'bottom pickbar';
     let txt, btn = '';
+    const tip = specialTipFor(PK.card);
+    if (tip) { markSpecialTip(PK.card); }
     if (sending) txt = `<small>${CARD_NAME[PK.card]}</small><b>Sender…</b>`;
-    else if (gvStep1) txt = `<small>Du trak Giv væk</small><b>Vælg det kort du vil give væk</b>`;
+    else if (gvStep1) txt = `<small>Du trak Giv væk</small><b>Vælg det kort du vil give væk</b>${tip ? `<div class="hint" id="specTip">${esc(tip)}</div>` : ''}`;
     else if (gridSel !== null) {
       txt = `<small>${PK.card === 'gv' ? 'Giv væk · dublet = bust' : CARD_NAME[PK.card]}</small><b>Tryk på ${gridSel === meIdx ? 'dig selv' : nmOf(gridSel)} igen ${PICK_VERB[PK.card](gridSel === meIdx, gvNum)}</b>`;
       if (PK.card === 'gv') btn = '<button type="button" id="btnBack" onclick="gvBack()">← Andet kort</button>';
     }
-    else if (PK.card === 'gv') { txt = `<small>Giv væk · dublet = bust</small><b>Tryk på den der skal have ${gvNum}</b>`; btn = '<button type="button" id="btnBack" onclick="gvBack()">← Andet kort</button>'; }
-    else txt = `<small>Du trak ${CARD_NAME[PK.card]}</small><b>${PICK_TXT[PK.card]}</b>`;
+    else if (PK.card === 'gv') { txt = `<small>Giv væk · dublet = bust</small><b>Tryk på den der skal have ${gvNum}</b>${tip ? `<div class="hint" id="specTip">${esc(tip)}</div>` : ''}`; btn = '<button type="button" id="btnBack" onclick="gvBack()">← Andet kort</button>'; }
+    else txt = `<small>Du trak ${CARD_NAME[PK.card]}</small><b>${PICK_TXT[PK.card]}</b>${tip ? `<div class="hint" id="specTip">${esc(tip)}</div>` : ''}`;
     b.innerHTML = `<div class="pbcard">${cardHtml(pickCard)}</div><div class="pbtxt" id="pickText">${txt}</div>${btn}`;
   } else if (v.phase === 'play' && v.pending && v.players[v.pending.chooser]) {
     b.className = 'bottom waitbar';
     const ch = v.players[v.pending.chooser];
     b.innerHTML = `<div class="pbcard">${cardHtml(v.pending.card)}</div><div class="wtxt"><div id="waitLine"><b>${esc(ch.ai ? String(ch.name).replace(/ \(AI\)$/, '') : ch.name)}</b> ${WAIT_TXT[v.pending.card] || 'vælger'}…</div>${wMark !== null ? `<div class="wmark" id="waitMark">Markeret: <b>${nmOf(wMark)}</b></div>` : ''}</div>`;
   } else
-  b.innerHTML = `<button class="stop" id="btnStop" ${canAct && G.canStop(mp) ? '' : 'disabled'} onclick="hostAct({a:'stop'})">Stop</button><button class="draw" id="btnDraw" ${canAct ? '' : 'disabled'} onclick="hostAct({a:'draw'})">Træk kort</button>`;
+  b.innerHTML = `<button class="stop" id="btnStop" ${canAct && mp && G.canStop(mp) ? '' : 'disabled'} onclick="hostAct({a:'stop'})">Stop</button><button class="draw" id="btnDraw" ${canAct ? '' : 'disabled'} onclick="hostAct({a:'draw'})">Træk kort</button>`;
   fitGrid();
   // modal: målvalg / rundeslut / spilslut
   const m = $('modal'), sh = $('sheet');
@@ -1613,7 +1825,11 @@ function renderGame() {
     }).join('') + '</div>';
     // revanche: samme rum, spillere, AI og regler
     const rs = v.rematch || {}, humans = v.players.filter(p => !p.ai && p.online !== false), nReady = humans.filter(p => rs[p.id]).length, meReady = !!rs[myId];
-    s += `<div class="rematch" id="rematchBox"><button class="primary${meReady ? ' ready' : ''}" id="btnRematch" onclick="voteRematch()">${meReady ? 'Klar til revanche ✓' : 'Revanche'}</button>
+    const mySpOver = (v.spectators || []).find(x => x.id === myId);
+    if (mySpOver) {
+      s += `<button class="primary" id="btnJoinNext" style="height:56px;font-size:18px;margin:8px 0" onclick="requestJoinNext(${mySpOver.joinNext ? 'false' : 'true'})">${mySpOver.joinNext ? 'Klar til næste spil ✓' : 'Spil med fra næste spil'}</button>`;
+    }
+    s += `<div class="rematch" id="rematchBox"><button class="primary${meReady ? ' ready' : ''}" id="btnRematch" onclick="voteRematch()" ${mySpOver ? 'disabled' : ''}>${meReady ? 'Klar til revanche ✓' : 'Revanche'}</button>
       <div class="rmlist" id="rmList">${humans.map(p => `<span class="rm${rs[p.id] ? ' on' : ''}">${rs[p.id] ? '✓' : '…'} ${esc(p.name)}</span>`).join('')}</div>
       <div class="hint" id="rmHint">${nReady}/${humans.length} klar. Starter, når alle er klar${role === 'host' ? ' – eller når du starter nu' : ''}. Samme regler og modstandere.</div>
       ${role === 'host' ? `<div class="rmrow"><button class="ghost" id="btnRematchNow" onclick="hostRematchNow()">Start revanche nu</button><button class="ghost" id="btnNew" onclick="hostNewGame()">Til lobbyen</button></div>` : ''}</div>`;
@@ -1624,12 +1840,17 @@ function renderGame() {
     let s = `<h2>Runde ${v.round} er slut</h2>`;
     if (v.tie) s += '<p class="hint">Uafgjort i toppen – der spilles en runde mere.</p>';
     s += '<table id="summary"><tr><th>Spiller</th><th>Runde</th><th style="text-align:right">Point</th><th style="text-align:right">Total</th></tr>' + order.map(i => { const p = v.players[i]; return `<tr><td><b>${esc(p.name)}</b><div class="sm">${handHtml(p, false)}</div></td><td>${statusChip(p)}</td><td class="n" style="color:${p.roundPts > 0 ? '#fff' : '#e0485f'}">${p.roundPts < 0 ? '−' + (-p.roundPts) : '+' + p.roundPts}</td><td class="n" style="font-size:20px">${p.total}</td></tr>`; }).join('') + '</table>';
+    const mySp = (v.spectators || []).find(x => x.id === myId);
+    if (mySp) {
+      s += `<button class="primary" id="btnJoinNext" style="height:56px;font-size:18px;margin-top:8px" onclick="requestJoinNext(${mySp.joinNext ? 'false' : 'true'})">${mySp.joinNext ? 'Klar til næste runde ✓' : 'Spil med fra næste runde'}</button>`;
+      s += `<p class="hint" style="text-align:center">Du bliver spiller, når værten starter næste runde (hvis der er plads).</p>`;
+    }
     if (role === 'host') {
       if (v.phase !== 'over') s += `<label class="tgl" id="anyNextTgl"><input type="checkbox" ${v.anyNext ? 'checked' : ''} onchange="hostAnyNext(this.checked)"> Alle kan starte næste runde</label>`;
       s += v.phase === 'over' ? `<button class="primary" id="btnNew" onclick="hostNewGame()">Nyt spil</button>` : `<button class="primary" id="btnNext" style="height:60px;font-size:20px" onclick="hostNext()">Næste runde</button>`;
-    } else if (v.phase !== 'over' && v.anyNext) {
+    } else if (!mySp && v.phase !== 'over' && v.anyNext) {
       s += `<button class="primary" id="btnNext" style="height:60px;font-size:20px" onclick="requestNext()">Næste runde</button>`;
-    } else {
+    } else if (!mySp) {
       s += `<p class="hint" style="text-align:center">Venter på at ${esc(v.players[0].name)} ${v.phase === 'over' ? 'starter et nyt spil' : 'starter næste runde'}…</p>`;
     }
     sh.innerHTML = s; m.classList.add('show');
@@ -1799,6 +2020,8 @@ window.onFlipUid = function (uid) {
     if (!sn || sn === myName) return;
     myName = sn; LS.set('name', sn); LS.del('nameTaken');
     const el = $('name'); if (el && document.activeElement !== el) el.value = sn;
+    // Har allerede profil/spil → tip om gendannelseskode (én gang)
+    if (!LS.get('recTipSeen', 0)) LS.set('recTipReady', 1);
   }).catch(() => {});
   attachUid();
   if (!role || rejected) loadHomeBoard();
@@ -1863,6 +2086,7 @@ function kickRecord() {
     Object.keys(G.CAPS).forEach(f => { b4[f] = Math.max(0, (b4[f] | 0) - (dl[f] | 0)); });
     if (won) b4.bestStreak = Math.max(0, Math.max(LS.get('streakLocal', {}).best | 0, now.bestStreak | 0) - (sl.cur === sl.best ? 1 : 0));
     careerBefore[v.matchId] = G.careerTiers(b4);
+    maybeArmRecTip();
     if (view && view.phase === 'over') render();
   }).catch(e => { recordBusy = ''; window.flipSaveFail = true; if (view && view.phase === 'over') render(); console.warn('kunne ikke gemme karriere', e && e.message ? e.message : e); });
 }

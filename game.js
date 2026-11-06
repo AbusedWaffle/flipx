@@ -16,6 +16,8 @@
     SPEC_KEYS.forEach(function (k) { if (typeof S.specials[k] !== 'boolean') S.specials[k] = !!defaultSpecials()[k]; });
     S.risk = !!S.risk;
     S.anyNext = !!S.anyNext;
+    S.paused = !!S.paused;
+    if (!Array.isArray(S.spectators)) S.spectators = [];
   }
   // Standard: 1 af hver modifikator, 3 af hvert tændt specialkort.
   // Lille ≈ halvdelen (mindst 1). Høj = dobbelt. Talkort er uændrede.
@@ -97,7 +99,7 @@
   function activeIdx(S) { var r = []; for (var i = 0; i < S.players.length; i++) if (isActive(S, i)) r.push(i); return r; }
 
   function createLobby(target) {
-    return { v: 1, phase: 'lobby', target: target || 200, deckMax: 12, chance: 'std', specials: defaultSpecials(), risk: false, anyNext: false, minus: 'off', minusChance: 'std', players: [], log: [], seq: 0, events: [], evSeq: 0 };
+    return { v: 1, phase: 'lobby', target: target || 200, deckMax: 12, chance: 'std', specials: defaultSpecials(), risk: false, anyNext: false, paused: false, minus: 'off', minusChance: 'std', players: [], spectators: [], log: [], seq: 0, events: [], evSeq: 0 };
   }
   function addPlayer(S, id, name) {
     var p = { id: id, name: name, online: true, total: 0 };
@@ -109,6 +111,7 @@
   function startGame(S, rng) {
     if (S.players.length < 2) return { ok: false, err: 'Mindst 2 spillere' };
     S.phase = 'play'; S.round = 0; S.dealer = -1; S.history = []; S.winners = []; S.tie = false; S.rematch = {}; S.isRematch = false;
+    S.paused = false;
     S.stats = S.players.map(function () { return newStats(); });
     normalizeRules(S);
     S.deck = shuffle(buildDeck(S.deckMax, S.specials, S.chance, S.minus, S.minusChance), rng); S.discard = [];
@@ -401,6 +404,7 @@
   function act(S, pid, a, rng) {
     var i = -1; S.players.forEach(function (p, k) { if (p.id === pid) i = k; });
     if (i < 0) return { ok: false, err: 'Ukendt spiller' };
+    if (S.paused && (a.a === 'draw' || a.a === 'stop' || a.a === 'choose')) return { ok: false, err: 'Spillet er sat på pause' };
     if (S.hold && (a.a === 'draw' || a.a === 'stop' || a.a === 'choose')) return { ok: false, err: 'Vent et øjeblik…' };
     if (a.a === 'draw' || a.a === 'stop') {
       if (S.phase !== 'play' || S.stage !== 'turns' || S.pending || S.turn !== i || !isActive(S, i)) return { ok: false, err: 'Ikke din tur' };
@@ -433,7 +437,7 @@
   }
   function nextRound(S, rng) { if (S.phase !== 'roundEnd') return { ok: false }; startRound(S, rng); return { ok: true }; }
   function backToLobby(S) {
-    S.phase = 'lobby'; S.players.forEach(function (p) { p.total = 0; delete p.nums; });
+    S.phase = 'lobby'; S.paused = false; S.players.forEach(function (p) { p.total = 0; delete p.nums; });
     ['deck', 'discard', 'queue', 'pending', 'hold', 'endOk', 'history', 'winners', 'turn', 'stage', 'round', 'dealer'].forEach(function (k) { delete S[k]; });
     log(S, 'Nyt spil – venter i lobbyen', 'info');
   }
@@ -651,7 +655,7 @@
   // Ét træk for den AI, der skal handle nu. Null hvis det er et menneske, eller ingen skal handle.
   function aiDecide(S) {
     var i, p;
-    if (!S || S.phase !== 'play' || S.hold) return null;
+    if (!S || S.phase !== 'play' || S.hold || S.paused) return null;
     if (S.pending) {
       i = S.pending.chooser; p = S.players[i];
       if (!p || !p.ai) return null;
@@ -713,9 +717,99 @@
     });
   }
 
+
+  // Flyt ny vært til index 0 og omnummerér turn/dealer/pending/kø/historik/events.
+  function transferHost(S, newPid) {
+    var i = -1, n, mapIdx, rot, k;
+    S.players.forEach(function (p, k2) { if (p.id === newPid) i = k2; });
+    if (i < 0) return { ok: false, err: 'Ukendt spiller' };
+    if (i === 0) return { ok: true };
+    n = S.players.length;
+    mapIdx = function (x) {
+      if (typeof x !== 'number' || x < 0) return x;
+      return (x - i + n) % n;
+    };
+    rot = function (arr) {
+      if (!arr || !arr.length) return arr;
+      return arr.slice(i).concat(arr.slice(0, i));
+    };
+    S.players = rot(S.players);
+    if (S.stats) S.stats = rot(S.stats);
+    if (S.history) S.history = S.history.map(rot);
+    S.turn = mapIdx(S.turn);
+    S.dealer = mapIdx(S.dealer);
+    if (S.pending) {
+      S.pending.chooser = mapIdx(S.pending.chooser);
+      if (S.pending.options) S.pending.options = S.pending.options.map(mapIdx);
+      if (S.pending.mark && S.pending.mark.t !== undefined) S.pending.mark.t = mapIdx(S.pending.mark.t);
+    }
+    (S.queue || []).forEach(function (t) {
+      if (t.i !== undefined) t.i = mapIdx(t.i);
+      if (t.from !== undefined) t.from = mapIdx(t.from);
+      if (t.target !== undefined) t.target = mapIdx(t.target);
+    });
+    (S.events || []).forEach(function (e) {
+      if (e.p !== undefined) e.p = mapIdx(e.p);
+      if (e.t !== undefined) e.t = mapIdx(e.t);
+    });
+    S.paused = false;
+    log(S, nm(S, 0) + ' er nu vært', 'info');
+    ev(S, 'host', { p: 0, name: nm(S, 0) });
+    return { ok: true };
+  }
+  // Tilskuere markeret joinNext → spillere (max 8). Kaldes før næste runde / nyt spil / revanche.
+  function promoteSpectators(S) {
+    if (!S.spectators || !S.spectators.length) return [];
+    var moved = [], left = [], k, sp, p;
+    for (k = 0; k < S.spectators.length; k++) {
+      sp = S.spectators[k];
+      if (sp && sp.joinNext && S.players.length < 8 && !S.players.some(function (x) { return x.id === sp.id; })) {
+        p = addPlayer(S, sp.id, sp.name);
+        p.online = !!sp.online;
+        if (sp.fuid) p.fuid = sp.fuid;
+        if (S.phase === 'play' || S.phase === 'roundEnd') { resetPlayerRound(p); p.total = 0; }
+        if (S.stats) S.stats.push(newStats());
+        moved.push(p.name);
+        log(S, sp.name + ' spiller med fra nu', 'info');
+      } else if (sp) left.push(sp);
+    }
+    S.spectators = left;
+    return moved;
+  }
+  // Lobby-forudindstillinger. Værten kan justere manuelt bagefter.
+  var PRESETS = {
+    classic: { deckMax: 12, chance: 'std', specials: { fr: true, f3: true, sc: true, et: false, gv: false, pa: false, h2: false, gh: false }, minus: 'off', minusChance: 'std', risk: false, anyNext: false },
+    kaos: { deckMax: 12, chance: 'high', specials: { fr: true, f3: true, sc: true, et: true, gv: true, pa: true, h2: true, gh: true }, minus: 'b', minusChance: 'std', risk: true, anyNext: true },
+    hurtig: { deckMax: 8, chance: 'low', specials: { fr: true, f3: true, sc: true, et: false, gv: false, pa: false, h2: false, gh: false }, minus: 'off', minusChance: 'std', risk: false, anyNext: true, target: 100 }
+  };
+  function applyPreset(S, key) {
+    var pr = PRESETS[key];
+    if (!pr || !S || S.phase !== 'lobby') return { ok: false };
+    S.deckMax = pr.deckMax; S.chance = pr.chance; S.minus = pr.minus; S.minusChance = pr.minusChance;
+    S.risk = !!pr.risk; S.anyNext = !!pr.anyNext;
+    S.specials = Object.assign(defaultSpecials(), pr.specials);
+    if (pr.target) S.target = pr.target;
+    normalizeRules(S);
+    return { ok: true };
+  }
+  function matchPreset(S) {
+    var k, pr, ok, sk;
+    if (!S) return null;
+    for (k in PRESETS) {
+      pr = PRESETS[k]; ok = true;
+      if (S.deckMax !== pr.deckMax || S.chance !== pr.chance || S.minus !== pr.minus) ok = false;
+      if (!!S.risk !== !!pr.risk || !!S.anyNext !== !!pr.anyNext) ok = false;
+      if ((S.minus !== 'off') && S.minusChance !== pr.minusChance) ok = false;
+      for (sk = 0; sk < SPEC_KEYS.length; sk++) if (!!((S.specials || {})[SPEC_KEYS[sk]]) !== !!pr.specials[SPEC_KEYS[sk]]) ok = false;
+      if (ok) return k;
+    }
+    return null;
+  }
+
   var api = { buildDeck: buildDeck, shuffle: shuffle, label: label, roundScore: roundScore, tableCards: tableCards, createLobby: createLobby,
     addPlayer: addPlayer, startGame: startGame, startRound: startRound, nextRound: nextRound, act: act, process: process, endRound: endRound, resume: resume,
     canStop: canStop, activeIdx: activeIdx, backToLobby: backToLobby, countCards: countCards, publicView: publicView, drawCard: drawCard,
+    transferHost: transferHost, promoteSpectators: promoteSpectators, applyPreset: applyPreset, matchPreset: matchPreset, PRESETS: PRESETS,
     normalizeRules: normalizeRules, defaultSpecials: defaultSpecials, MINUS_SETS: MINUS_SETS, SPEC_KEYS: SPEC_KEYS, aiDecide: aiDecide, pickAiNames: pickAiNames, renameAi: renameAi, AI_NAMES: AI_NAMES, gameRanking: gameRanking, winPercent: winPercent, formatPercent: formatPercent, nextCareer: nextCareer, nameKey: nameKey, sortBoard: sortBoard,
     bustRisk: bustRisk, rematch: rematch, rematchState: rematchState, recap: recap, TIERS: TIERS, CAREER: CAREER, COUNTERS: COUNTERS, CAPS: CAPS, SESSION: SESSION, tierOf: tierOf, careerTiers: careerTiers, careerTop: careerTop, sessionBadges: sessionBadges, gameDelta: gameDelta, applyCounters: applyCounters, addPending: addPending, aiStyle: aiStyle, STYLES: STYLES };
   api.eventsSince = function (S, id) { return (S.events || []).filter(function (e) { return e.id > id; }); };
