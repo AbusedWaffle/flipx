@@ -667,6 +667,8 @@ function onHostData(c, d) {
     publish();
   } else if (d.t === 'rematch' && c.pid && conns[c.pid] === c) {
     hostRematchVote(c.pid, !!d.on);
+  } else if (d.t === 'next' && c.pid && conns[c.pid] === c) {
+    if (S && S.anyNext && S.phase === 'roundEnd') hostNext();
   } else if (d.t === 'uid' && c.pid && conns[c.pid] === c) {
     const p = S.players.find(x => x.id === c.pid);
     if (setFuid(p, d.uid)) publish();
@@ -782,7 +784,14 @@ function scheduleAi() {
     hostActFor(now.pid, { a: now.a, target: now.target, num: now.num });
   }, 600 + Math.floor(Math.random() * 601));
 }
-function hostNext() { G.nextRound(S); publish(); }
+function hostNext() { if (role !== 'host' || !S || S.phase !== 'roundEnd') return; G.nextRound(S); publish(); }
+function requestNext() {
+  if (role === 'host') return hostNext();
+  if (!view || !view.anyNext || view.phase !== 'roundEnd') return;
+  if (!hostConn || !hostConn.open) return toast('Ingen forbindelse til værten');
+  send(hostConn, { t: 'next' });
+}
+function hostAnyNext(on) { if (role !== 'host' || !S) return; S.anyNext = !!on; publish(); }
 // ---------- revanche ----------
 function hostRematchVote(pid, on) {
   if (role !== 'host' || !S || S.phase !== 'over') return;
@@ -1479,10 +1488,11 @@ function renderLobby() {
   const mi = ['a','b','c'].indexOf(v.minus) >= 0 ? v.minus : 'off', mch = v.minusChance === 'low' || v.minusChance === 'high' ? v.minusChance : 'std';
   h += `<div class="lbl">Minuskort</div><div class="seg deck minus" id="minusSeg">${MINUS_LIST.map(([k, n]) => `<button type="button" data-minus="${k}" class="${mi === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostMinus('${k}')">${n}</button>`).join('')}</div>`;
   if (mi !== 'off') h += `<div class="lbl">Chance for minuskort</div><div class="seg deck" id="minusChanceSeg">${[['low','Lille'],['std','Standard'],['high','Høj']].map(([k, n]) => `<button type="button" data-mchance="${k}" class="${mch === k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostMinusChance('${k}')">${n}</button>`).join('')}</div>`;
-  h += `<div class="hint" id="rulesLine">Talkort 0–${max}. Chance: ${CHANCE_NAME[ch]}. Med: ${esc(onNames)}. Minuskort: ${mi === 'off' ? 'fra' : MINUS_LIST.find(x => x[0] === mi)[1].replace(/ /g, '/') + ' (' + CHANCE_NAME[mch] + ')'}.${v.risk ? ' Risikomåler: til.' : ''}</div>`;
+  h += `<div class="hint" id="rulesLine">Talkort 0–${max}. Chance: ${CHANCE_NAME[ch]}. Med: ${esc(onNames)}. Minuskort: ${mi === 'off' ? 'fra' : MINUS_LIST.find(x => x[0] === mi)[1].replace(/ /g, '/') + ' (' + CHANCE_NAME[mch] + ')'}.${v.risk ? ' Risikomåler: til.' : ''}${v.anyNext ? ' Alle kan starte næste runde.' : ''}</div>`;
   h += `<div class="hint">Minuskort trækkes fra rundens point efter de andre modifikatorer og kan give minus i runden. ÷2 halverer dine egne point i runden. Giv ÷2 gives til en anden aktiv spiller og halverer deres.</div>`;
   h += `<div class="hint">Ekstra træk: to kort mere med det samme. Bust på det første stopper det andet. Giv væk: giv et af dine tal til en anden (dublet = bust). Pause: springes over én gang, bliver i runden.</div>`;
   h += `<div class="lbl">Risikomåler</div><div class="seg deck" id="riskSeg">${[[0,'Fra'],[1,'Til']].map(([k, n]) => `<button type="button" data-risk="${k}" class="${!!v.risk === !!k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostRisk(${k})">${n}</button>`).join('')}</div><div class="hint" id="riskHint">Viser hvor stor risikoen er for bust ved næste kort – i feltet hos den, der har tur. Alle ser den.</div>`;
+  h += `<div class="lbl">Alle kan starte næste runde</div><div class="seg deck" id="anyNextSeg">${[[0,'Fra'],[1,'Til']].map(([k, n]) => `<button type="button" data-anynext="${k}" class="${!!v.anyNext === !!k ? 'on' : ''}" ${host ? '' : 'disabled'} onclick="hostAnyNext(${k})">${n}</button>`).join('')}</div><div class="hint" id="anyNextHint">Når den er til, kan alle spillere trykke «Næste runde» – ikke kun værten. Værten starter stadig runden.</div>`;
   const aiN = v.players.filter(p => p.ai).length;
   const maxAi = Math.min(7, 8 - v.players.filter(p => !p.ai).length);
   if (host) h += `<div class="lbl">Modstandere (AI)</div><div class="seg deck ai" id="aiSeg">${[0,1,2,3,4,5,6,7].map(n => `<button type="button" data-ai="${n}" class="${aiN === n ? 'on' : ''}" ${n > maxAi ? 'disabled' : ''} onclick="hostAi(${n})">${n}</button>`).join('')}</div><div class="hint" id="aiHint">${aiN ? 'Computeren spiller med på denne telefon. Ingen andre skal joine.' : '0 = almindeligt spil, hvor andre telefoner joiner.'}</div>`;
@@ -1614,8 +1624,14 @@ function renderGame() {
     let s = `<h2>Runde ${v.round} er slut</h2>`;
     if (v.tie) s += '<p class="hint">Uafgjort i toppen – der spilles en runde mere.</p>';
     s += '<table id="summary"><tr><th>Spiller</th><th>Runde</th><th style="text-align:right">Point</th><th style="text-align:right">Total</th></tr>' + order.map(i => { const p = v.players[i]; return `<tr><td><b>${esc(p.name)}</b><div class="sm">${handHtml(p, false)}</div></td><td>${statusChip(p)}</td><td class="n" style="color:${p.roundPts > 0 ? '#fff' : '#e0485f'}">${p.roundPts < 0 ? '−' + (-p.roundPts) : '+' + p.roundPts}</td><td class="n" style="font-size:20px">${p.total}</td></tr>`; }).join('') + '</table>';
-    if (role === 'host') s += v.phase === 'over' ? `<button class="primary" id="btnNew" onclick="hostNewGame()">Nyt spil</button>` : `<button class="primary" id="btnNext" style="height:60px;font-size:20px" onclick="hostNext()">Næste runde</button>`;
-    else s += `<p class="hint" style="text-align:center">Venter på at ${esc(v.players[0].name)} ${v.phase === 'over' ? 'starter et nyt spil' : 'starter næste runde'}…</p>`;
+    if (role === 'host') {
+      if (v.phase !== 'over') s += `<label class="tgl" id="anyNextTgl"><input type="checkbox" ${v.anyNext ? 'checked' : ''} onchange="hostAnyNext(this.checked)"> Alle kan starte næste runde</label>`;
+      s += v.phase === 'over' ? `<button class="primary" id="btnNew" onclick="hostNewGame()">Nyt spil</button>` : `<button class="primary" id="btnNext" style="height:60px;font-size:20px" onclick="hostNext()">Næste runde</button>`;
+    } else if (v.phase !== 'over' && v.anyNext) {
+      s += `<button class="primary" id="btnNext" style="height:60px;font-size:20px" onclick="requestNext()">Næste runde</button>`;
+    } else {
+      s += `<p class="hint" style="text-align:center">Venter på at ${esc(v.players[0].name)} ${v.phase === 'over' ? 'starter et nyt spil' : 'starter næste runde'}…</p>`;
+    }
     sh.innerHTML = s; m.classList.add('show');
   } else m.classList.remove('show');
 }

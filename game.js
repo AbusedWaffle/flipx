@@ -15,6 +15,7 @@
     if (!S.specials) S.specials = defaultSpecials();
     SPEC_KEYS.forEach(function (k) { if (typeof S.specials[k] !== 'boolean') S.specials[k] = !!defaultSpecials()[k]; });
     S.risk = !!S.risk;
+    S.anyNext = !!S.anyNext;
   }
   // Standard: 1 af hver modifikator, 3 af hvert tændt specialkort.
   // Lille ≈ halvdelen (mindst 1). Høj = dobbelt. Talkort er uændrede.
@@ -96,7 +97,7 @@
   function activeIdx(S) { var r = []; for (var i = 0; i < S.players.length; i++) if (isActive(S, i)) r.push(i); return r; }
 
   function createLobby(target) {
-    return { v: 1, phase: 'lobby', target: target || 200, deckMax: 12, chance: 'std', specials: defaultSpecials(), risk: false, minus: 'off', minusChance: 'std', players: [], log: [], seq: 0, events: [], evSeq: 0 };
+    return { v: 1, phase: 'lobby', target: target || 200, deckMax: 12, chance: 'std', specials: defaultSpecials(), risk: false, anyNext: false, minus: 'off', minusChance: 'std', players: [], log: [], seq: 0, events: [], evSeq: 0 };
   }
   function addPlayer(S, id, name) {
     var p = { id: id, name: name, online: true, total: 0 };
